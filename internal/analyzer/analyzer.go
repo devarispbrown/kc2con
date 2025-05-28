@@ -72,12 +72,15 @@ func (a *Analyzer) Analyze() (*Result, error) {
 
 	// Create parser and registry
 	configParser := parser.New()
-	registry := registry.New()
+	registry, err := registry.NewImproved("")
+    if err != nil {
+        return nil, fmt.Errorf("failed to load registry: %w", err)
+    }
 
 	var connectorConfigs []*parser.ConnectorConfig
 
 	// Scan for configuration files
-	err := filepath.Walk(a.configDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(a.configDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -122,7 +125,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 	return result, nil
 }
 
-func (a *Analyzer) processConnectorConfig(parser *parser.Parser, registry *registry.Registry, configPath string, result *Result, connectorConfigs *[]*parser.ConnectorConfig) error {
+func (a *Analyzer) processConnectorConfig(parser *parser.Parser, registry *registry.ImprovedRegistry, configPath string, result *Result, connectorConfigs *[]*parser.ConnectorConfig) error {
 	connectorConfig, err := parser.ParseConnectorConfig(configPath)
 	if err != nil {
 		return err

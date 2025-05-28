@@ -1,0 +1,399 @@
+# connectors.yaml - External Connector Registry Configuration
+# This file can be easily updated without code changes!
+
+version: "1.0"
+description: "Kafka Connect to Conduit Connector Compatibility Registry"
+updated: "2024-12-19"
+
+# Connector Categories for Organization
+categories:
+  databases:
+    name: "Database Connectors"
+    description: "Relational and NoSQL database connectors"
+  
+  messaging:
+    name: "Messaging & Streaming"
+    description: "Message brokers and streaming platforms"
+  
+  storage:
+    name: "Cloud Storage"
+    description: "Object storage and file systems"
+  
+  search:
+    name: "Search & Analytics"
+    description: "Search engines and analytics platforms"
+  
+  monitoring:
+    name: "Monitoring & Observability"
+    description: "Logging, metrics, and monitoring systems"
+
+# Connector Mappings
+connectors:
+  # ======================
+  # DATABASE CONNECTORS
+  # ======================
+  
+  # MySQL CDC (Debezium)
+  - kafka_connect_class: "io.debezium.connector.mysql.MySqlConnector"
+    name: "MySQL CDC (Debezium)"
+    category: "databases"
+    conduit_equivalent: "mysql-cdc"
+    conduit_type: "source"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "database.hostname"
+      - "database.port"
+      - "database.user"
+      - "database.password"
+      - "database.server.name"
+    unsupported_features:
+      - "database.ssl.mode=VERIFY_IDENTITY"
+      - "signal.data.collection"
+    estimated_effort: "30 minutes"
+    notes: "Full CDC support with snapshot and incremental sync. SSL configuration syntax differs."
+    documentation_url: "https://conduit.io/docs/using/connectors/mysql"
+    
+  # PostgreSQL CDC (Debezium)
+  - kafka_connect_class: "io.debezium.connector.postgresql.PostgresConnector"
+    name: "PostgreSQL CDC (Debezium)"
+    category: "databases"
+    conduit_equivalent: "postgres-cdc"
+    conduit_type: "source"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "database.hostname"
+      - "database.port"
+      - "database.user"
+      - "database.password"
+      - "database.dbname"
+      - "database.server.name"
+    unsupported_features:
+      - "slot.drop.on.stop=false"
+    estimated_effort: "30 minutes"
+    notes: "Logical replication support. Replication slot management differs from Kafka Connect."
+    documentation_url: "https://conduit.io/docs/using/connectors/postgres"
+
+  # JDBC Source
+  - kafka_connect_class: "io.confluent.connect.jdbc.JdbcSourceConnector"
+    name: "JDBC Source"
+    category: "databases"
+    conduit_equivalent: "postgres"
+    conduit_type: "source"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "connection.url"
+      - "mode"
+    unsupported_features:
+      - "validate.non.null=false"
+    estimated_effort: "45 minutes"
+    notes: "Supports PostgreSQL, MySQL, SQLite. Database-specific optimizations available."
+    documentation_url: "https://conduit.io/docs/using/connectors/postgres"
+
+  # JDBC Sink
+  - kafka_connect_class: "io.confluent.connect.jdbc.JdbcSinkConnector"
+    name: "JDBC Sink"
+    category: "databases"
+    conduit_equivalent: "postgres"
+    conduit_type: "destination"
+    status: "supported" 
+    confidence: "high"
+    required_fields:
+      - "connection.url"
+    estimated_effort: "30 minutes"
+    notes: "Full insert/upsert/delete support. Schema evolution supported."
+    documentation_url: "https://conduit.io/docs/using/connectors/postgres"
+
+  # ======================
+  # CLOUD STORAGE
+  # ======================
+  
+  # S3 Sink
+  - kafka_connect_class: "io.confluent.connect.s3.S3SinkConnector"
+    name: "Amazon S3 Sink"
+    category: "storage"
+    conduit_equivalent: "s3"
+    conduit_type: "destination" 
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "s3.bucket.name"
+    unsupported_features:
+      - "storage.class=io.confluent.connect.s3.storage.S3Storage"
+    estimated_effort: "30 minutes"
+    notes: "Supports JSON, Avro, and Parquet formats. Time-based partitioning available."
+    documentation_url: "https://conduit.io/docs/using/connectors/s3"
+
+  # File Connectors
+  - kafka_connect_class: "org.apache.kafka.connect.file.FileStreamSourceConnector"
+    name: "File Stream Source"
+    category: "storage"
+    conduit_equivalent: "file"
+    conduit_type: "source"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "file"
+    estimated_effort: "15 minutes"
+    notes: "File tailing and batch processing supported."
+    documentation_url: "https://conduit.io/docs/using/connectors/file"
+
+  - kafka_connect_class: "org.apache.kafka.connect.file.FileStreamSinkConnector"
+    name: "File Stream Sink"
+    category: "storage"
+    conduit_equivalent: "file"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "file"
+    estimated_effort: "15 minutes"
+    notes: "File output with rotation and compression options."
+    documentation_url: "https://conduit.io/docs/using/connectors/file"
+
+  # ======================
+  # SEARCH & ANALYTICS
+  # ======================
+  
+  # Elasticsearch
+  - kafka_connect_class: "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector"
+    name: "Elasticsearch Sink"
+    category: "search"
+    conduit_equivalent: "elasticsearch"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "connection.url"
+    estimated_effort: "30 minutes"
+    notes: "Full indexing support with dynamic mapping. Bulk operations supported."
+    documentation_url: "https://conduit.io/docs/using/connectors/elasticsearch"
+
+  # ======================
+  # MESSAGING SYSTEMS
+  # ======================
+  
+  # Kafka to Kafka
+  - kafka_connect_class: "org.apache.kafka.connect.mirror.MirrorSourceConnector"
+    name: "Kafka Source (MirrorMaker)"
+    category: "messaging"
+    conduit_equivalent: "kafka"
+    conduit_type: "source"
+    status: "partial"
+    confidence: "medium"
+    required_fields:
+      - "source.cluster.bootstrap.servers"
+    unsupported_features:
+      - "sync.group.offsets.enabled=true"
+    estimated_effort: "2-3 hours"
+    notes: "Cross-cluster replication. Offset management and topic filtering differs."
+    documentation_url: "https://conduit.io/docs/using/connectors/kafka"
+
+  # ======================
+  # HTTP & WEB SERVICES
+  # ======================
+  
+  # HTTP Sink
+  - kafka_connect_class: "io.confluent.connect.http.HttpSinkConnector"
+    name: "HTTP Sink"
+    category: "messaging"
+    conduit_equivalent: "http"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "http.api.url"
+    estimated_effort: "30 minutes"
+    notes: "REST API integration with configurable headers and authentication."
+    documentation_url: "https://conduit.io/docs/using/connectors/http"
+
+  # ======================
+  # NOSQL DATABASES
+  # ======================
+  
+  # MongoDB
+  - kafka_connect_class: "com.mongodb.kafka.connect.MongoSourceConnector"
+    name: "MongoDB Source"
+    category: "databases"
+    conduit_equivalent: "mongo"
+    conduit_type: "source"
+    status: "partial"
+    confidence: "medium"
+    required_fields:
+      - "connection.uri"
+    unsupported_features:
+      - "copy.existing=true"
+    estimated_effort: "1-2 hours"
+    notes: "Change stream support available. Initial sync configuration differs."
+    documentation_url: "https://conduit.io/docs/using/connectors/mongo"
+
+  - kafka_connect_class: "com.mongodb.kafka.connect.MongoSinkConnector"
+    name: "MongoDB Sink"
+    category: "databases"
+    conduit_equivalent: "mongo"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    required_fields:
+      - "connection.uri"
+    estimated_effort: "30 minutes"
+    notes: "Document insert/update/delete operations supported."
+    documentation_url: "https://conduit.io/docs/using/connectors/mongo"
+
+  # ======================
+  # ADDITIONAL CONDUIT CONNECTORS
+  # Based on https://conduit.io/docs/using/connectors/list
+  # ======================
+
+  # ClickHouse
+  - kafka_connect_class: "com.clickhouse.kafka.connect.ClickHouseSinkConnector"
+    name: "ClickHouse Sink"
+    category: "databases"
+    conduit_equivalent: "clickhouse"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "45 minutes"
+    notes: "High-performance analytics database support."
+    documentation_url: "https://conduit.io/docs/using/connectors/clickhouse"
+
+  # BigQuery
+  - kafka_connect_class: "com.wepay.kafka.connect.bigquery.BigQuerySinkConnector"
+    name: "Google BigQuery Sink"
+    category: "databases"
+    conduit_equivalent: "bigquery"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "45 minutes"
+    notes: "Google Cloud data warehouse integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/bigquery"
+
+  # Redshift
+  - kafka_connect_class: "io.confluent.connect.aws.redshift.RedshiftSinkConnector"
+    name: "Amazon Redshift Sink"
+    category: "databases"
+    conduit_equivalent: "redshift"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "45 minutes"
+    notes: "AWS data warehouse integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/redshift"
+
+  # Snowflake
+  - kafka_connect_class: "com.snowflake.kafka.connector.SnowflakeSinkConnector"
+    name: "Snowflake Sink"  
+    category: "databases"
+    conduit_equivalent: "snowflake"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "45 minutes"
+    notes: "Cloud data warehouse integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/snowflake"
+
+  # Webhook
+  - kafka_connect_class: "com.github.castorm.kafka.connect.http.HttpSinkConnector"
+    name: "Webhook Sink"
+    category: "messaging"
+    conduit_equivalent: "webhook"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "30 minutes"
+    notes: "HTTP webhook integration with retry logic."
+    documentation_url: "https://conduit.io/docs/using/connectors/webhook"
+
+  # Slack
+  - kafka_connect_class: "io.confluent.connect.slack.SlackSinkConnector"
+    name: "Slack Sink"
+    category: "messaging"
+    conduit_equivalent: "slack"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "20 minutes"
+    notes: "Send messages to Slack channels."
+    documentation_url: "https://conduit.io/docs/using/connectors/slack"
+
+  # Nats
+  - kafka_connect_class: "io.nats.connect.NatsSourceConnector"
+    name: "NATS Source"
+    category: "messaging"
+    conduit_equivalent: "nats"
+    conduit_type: "source"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "30 minutes"
+    notes: "NATS messaging system integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/nats"
+
+  - kafka_connect_class: "io.nats.connect.NatsSinkConnector"
+    name: "NATS Sink"
+    category: "messaging"
+    conduit_equivalent: "nats"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "30 minutes"
+    notes: "NATS messaging system integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/nats"
+
+  # OpenSearch
+  - kafka_connect_class: "org.opensearch.connector.opensearch.OpenSearchSinkConnector"
+    name: "OpenSearch Sink"
+    category: "search"
+    conduit_equivalent: "opensearch"
+    conduit_type: "destination"
+    status: "supported"
+    confidence: "high"
+    estimated_effort: "30 minutes"
+    notes: "OpenSearch (Elasticsearch fork) integration."
+    documentation_url: "https://conduit.io/docs/using/connectors/opensearch"
+
+  # Log Connectors
+  - kafka_connect_class: "com.github.jcustenborder.kafka.connect.syslog.UdpSyslogSourceConnector"
+    name: "Syslog Source"
+    category: "monitoring"
+    conduit_equivalent: "log"
+    conduit_type: "source" 
+    status: "supported"
+    confidence: "medium"
+    estimated_effort: "45 minutes"
+    notes: "System log ingestion via UDP/TCP."
+    documentation_url: "https://conduit.io/docs/using/connectors/log"
+
+# Transform Mappings (SMTs)
+transforms:
+  - kafka_connect_class: "org.apache.kafka.connect.transforms.RegexRouter"
+    conduit_equivalent: "field.rename"
+    status: "supported"
+    notes: "Use field.rename processor for topic routing"
+    
+  - kafka_connect_class: "org.apache.kafka.connect.transforms.TimestampConverter"
+    conduit_equivalent: "field.convert"
+    status: "supported"
+    notes: "Use field.convert processor for timestamp conversion"
+    
+  - kafka_connect_class: "org.apache.kafka.connect.transforms.InsertField"
+    conduit_equivalent: "field.set"
+    status: "supported"
+    notes: "Use field.set processor to add fields"
+    
+  - kafka_connect_class: "org.apache.kafka.connect.transforms.MaskField"
+    conduit_equivalent: "field.mask"  
+    status: "supported"
+    notes: "Use field.mask processor for data masking"
+    
+  - kafka_connect_class: "org.apache.kafka.connect.transforms.Filter"
+    conduit_equivalent: "filter.field"
+    status: "supported"
+    notes: "Use filter.field processor for record filtering"
+    
+  - kafka_connect_class: "io.debezium.transforms.ExtractNewRecordState"
+    conduit_equivalent: "unwrap.debezium"
+    status: "supported"
+    notes: "Use unwrap.debezium processor for CDC event unwrapping"
