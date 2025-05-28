@@ -45,7 +45,7 @@ func (m *BaseMapper) CreateBasePipeline(config *parser.ConnectorConfig, connecto
 
 	// Ensure plugin has proper format
 	if !strings.Contains(plugin, "@") && strings.HasPrefix(plugin, "builtin:") {
-		plugin = plugin + "@latest"
+		plugin += "@latest"
 	}
 
 	pipeline := &ConduitPipeline{

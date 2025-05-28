@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/charmbracelet/lipgloss"
 	"gopkg.in/yaml.v3"
 )
@@ -316,7 +319,8 @@ func (r *Reporter) formatMarkdown(report *Report) string {
 
 		for _, severity := range []string{"error", "warning", "info"} {
 			if issues, ok := bySeverity[severity]; ok && len(issues) > 0 {
-				md.WriteString(fmt.Sprintf("### %s\n\n", strings.Title(severity)))
+				caser := cases.Title(language.English)
+				md.WriteString(fmt.Sprintf("### %s\n\n", caser.String(severity)))
 				for _, issue := range issues {
 					md.WriteString(fmt.Sprintf("- %s", issue.Message))
 					if issue.Suggestion != "" {

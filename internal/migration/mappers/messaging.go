@@ -16,6 +16,34 @@ const (
 	FormatJSON   = "json"
 )
 
+// Connection and security related constants
+const (
+	bootstrapServers = "bootstrap.servers"
+	securityProtocol = "security.protocol"
+	saslMechanism    = "sasl.mechanism"
+	saslJaasConfig   = "sasl.jaas.config"
+)
+
+// Connector type constants
+const (
+	typeSource      = "source"
+	typeDestination = "destination"
+)
+
+// Configuration key constants
+const (
+	configTopics      = "topics"
+	configTopicsRegex = "topics.regex"
+	configGroupID     = "group.id"
+)
+
+// HTTP auth type constants
+const (
+	authTypeBasic  = "BASIC"
+	authTypeOAuth2 = "OAUTH2"
+	authTypeBearer = "BEARER"
+)
+
 // KafkaMapper handles Kafka connector mapping
 type KafkaMapper struct {
 	BaseMapper
@@ -38,25 +66,25 @@ func (m *KafkaMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 	sb := NewSettingsBuilder()
 
 	// Kafka brokers
-	brokers := GetConfigValue(config, "bootstrap.servers")
+	brokers := GetConfigValue(config, bootstrapServers)
 	if brokers == "" {
 		brokers = GetConfigValue(config, "source.cluster.bootstrap.servers")
 	}
 	if brokers == "" {
 		brokers = GetConfigValue(config, "kafka.bootstrap.servers")
 	}
-	sb.Required("brokers", brokers, "bootstrap.servers")
+	sb.Required("brokers", brokers, bootstrapServers)
 
 	// Topics configuration
-	topics := GetConfigValue(config, "topics")
-	topicsRegex := GetConfigValue(config, "topics.regex")
+	topics := GetConfigValue(config, configTopics)
+	topicsRegex := GetConfigValue(config, configTopicsRegex)
 
 	if topics != "" {
 		sb.Optional("topics", topics)
 	} else if topicsRegex != "" {
 		sb.Optional("topic.regex", topicsRegex)
-	} else if connectorType == "source" {
-		return nil, fmt.Errorf("topics or topics.regex is required for source connector")
+	} else if connectorType == typeSource {
+		return nil, fmt.Errorf("%s or %s is required for source connector", configTopics, configTopicsRegex)
 	}
 
 	settings, err := sb.Build()
@@ -65,8 +93,8 @@ func (m *KafkaMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 	}
 
 	// Consumer configuration (for source)
-	if connectorType == "source" {
-		if groupID := GetConfigValue(config, "group.id"); groupID != "" {
+	if connectorType == typeSource {
+		if groupID := GetConfigValue(config, configGroupID); groupID != "" {
 			settings["consumer.group.id"] = groupID
 		}
 
@@ -84,7 +112,7 @@ func (m *KafkaMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 	}
 
 	// Producer configuration (for destination)
-	if connectorType == "destination" {
+	if connectorType == typeDestination {
 		if acks := GetConfigValue(config, "producer.acks"); acks != "" {
 			settings["producer.acks"] = acks
 		}
@@ -103,17 +131,17 @@ func (m *KafkaMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 	}
 
 	// Security configuration
-	if protocol := GetConfigValue(config, "security.protocol"); protocol != "" {
-		settings["security.protocol"] = protocol
+	if protocol := GetConfigValue(config, securityProtocol); protocol != "" {
+		settings[securityProtocol] = protocol
 
 		// SASL configuration
 		if strings.Contains(protocol, "SASL") {
-			if mechanism := GetConfigValue(config, "sasl.mechanism"); mechanism != "" {
-				settings["sasl.mechanism"] = mechanism
+			if mechanism := GetConfigValue(config, saslMechanism); mechanism != "" {
+				settings[saslMechanism] = mechanism
 			}
 
-			if jaasConfig := GetConfigValue(config, "sasl.jaas.config"); jaasConfig != "" {
-				settings["sasl.jaas.config"] = jaasConfig
+			if jaasConfig := GetConfigValue(config, saslJaasConfig); jaasConfig != "" {
+				settings[saslJaasConfig] = jaasConfig
 			}
 		}
 
@@ -146,8 +174,8 @@ func NewHTTPMapper() *HTTPMapper {
 
 // Map converts HTTP configuration
 func (m *HTTPMapper) Map(config *parser.ConnectorConfig, info registry.ConnectorInfo, connectorType string) (*ConduitPipeline, error) {
-	if connectorType != "destination" {
-		return nil, fmt.Errorf("HTTP connector only supports destination type")
+	if connectorType != typeDestination {
+		return nil, fmt.Errorf("HTTP connector only supports %s type", typeDestination)
 	}
 
 	pipeline, err := m.CreateBasePipeline(config, connectorType, "builtin:http")
@@ -189,7 +217,7 @@ func (m *HTTPMapper) Map(config *parser.ConnectorConfig, info registry.Connector
 	// Authentication
 	authType := GetConfigValue(config, "auth.type")
 	switch authType {
-	case "BASIC":
+	case authTypeBasic:
 		if userInfo := GetConfigValue(config, "auth.user.info"); userInfo != "" {
 			parts := strings.SplitN(userInfo, ":", 2)
 			if len(parts) == 2 {
@@ -197,7 +225,7 @@ func (m *HTTPMapper) Map(config *parser.ConnectorConfig, info registry.Connector
 				settings["auth.password"] = MaskSensitiveValue("auth.password", parts[1])
 			}
 		}
-	case "OAUTH2":
+	case authTypeOAuth2:
 		settings["oauth2.enabled"] = true
 		if tokenURL := GetConfigValue(config, "oauth2.token.url"); tokenURL != "" {
 			settings["oauth2.token.url"] = tokenURL
@@ -208,7 +236,7 @@ func (m *HTTPMapper) Map(config *parser.ConnectorConfig, info registry.Connector
 		if clientSecret := GetConfigValue(config, "oauth2.client.secret"); clientSecret != "" {
 			settings["oauth2.client.secret"] = MaskSensitiveValue("oauth2.client.secret", clientSecret)
 		}
-	case "BEARER":
+	case authTypeBearer:
 		if token := GetConfigValue(config, "auth.bearer.token"); token != "" {
 			headers["Authorization"] = "Bearer " + MaskSensitiveValue("bearer.token", token).(string)
 			settings["headers"] = headers
@@ -313,21 +341,21 @@ func mapKafkaSerializer(serializer string) string {
 	case strings.Contains(serializer, "AvroSerializer"):
 		return FormatAvro
 	default:
-		return "bytes"
+		return FormatBytes
 	}
 }
 
 func mapKafkaDeserializer(deserializer string) string {
 	switch {
 	case strings.Contains(deserializer, "ByteArrayDeserializer"):
-		return "bytes"
+		return FormatBytes
 	case strings.Contains(deserializer, "StringDeserializer"):
-		return "string"
+		return FormatString
 	case strings.Contains(deserializer, "JsonDeserializer"):
-		return "json"
+		return FormatJSON
 	case strings.Contains(deserializer, "AvroDeserializer"):
-		return "avro"
+		return FormatAvro
 	default:
-		return "bytes"
+		return FormatBytes
 	}
 }

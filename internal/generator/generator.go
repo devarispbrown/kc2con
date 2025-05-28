@@ -129,7 +129,7 @@ func (g *Generator) generateDestination(config *parser.ConnectorConfig, analysis
 	case strings.Contains(config.Class, "ElasticsearchSinkConnector"):
 		g.mapElasticsearchSettings(config, dest.Settings)
 	case strings.Contains(config.Class, "HttpSinkConnector"):
-		g.mapHttpSettings(config, dest.Settings)
+		g.mapHTTPSettings(config, dest.Settings)
 	case strings.Contains(config.Class, "MongoSinkConnector"):
 		g.mapMongoSettings(config, dest.Settings)
 	default:
@@ -282,7 +282,7 @@ func (g *Generator) mapElasticsearchSettings(config *parser.ConnectorConfig, set
 	}
 }
 
-func (g *Generator) mapHttpSettings(config *parser.ConnectorConfig, settings map[string]interface{}) {
+func (g *Generator) mapHTTPSettings(config *parser.ConnectorConfig, settings map[string]interface{}) {
 	if v := getConfigValue(config, "http.api.url"); v != "" {
 		settings["url"] = v
 	}

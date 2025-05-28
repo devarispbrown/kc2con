@@ -145,8 +145,8 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	// Create pipelines directory
 	pipelinesDir := filepath.Join(outputDir, "pipelines")
 	if !dryRun {
-		if err := os.MkdirAll(pipelinesDir, 0o755); err != nil {
-			return fmt.Errorf("failed to create pipelines directory: %w", err)
+		if mkdirErr := os.MkdirAll(pipelinesDir, 0o755); mkdirErr != nil {
+			return fmt.Errorf("failed to create pipelines directory: %w", mkdirErr)
 		}
 	}
 
@@ -500,7 +500,7 @@ echo "To check status:"
 echo "  conduit pipeline list"
 `
 
-	return os.WriteFile(scriptPath, []byte(content), 0o700)
+	return os.WriteFile(scriptPath, []byte(content), 0o600)
 }
 
 func generateMigrationGuide(outputDir string, results []MigrationResult) error {

@@ -1,6 +1,7 @@
 package compatibility
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -48,7 +49,7 @@ func (m *Matrix) ShowAll() error {
 	fmt.Println("├─────────────────────────────────────┼─────────────────────┼─────────────┤")
 
 	for i := range connectors {
-		connectorInfo := &connectors[i]
+		connectorInfo := connectors[i]
 		status := "✅ Supported"
 		switch connectorInfo.Status {
 		case registry.StatusPartial:
@@ -105,11 +106,11 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 
 	// Look for exact match first
 	for i := range connectors {
-		info := &connectors[i]
+		info := connectors[i]
 		if strings.EqualFold(info.Name, connectorType) ||
 			strings.Contains(strings.ToLower(info.Name), strings.ToLower(connectorType)) ||
 			strings.Contains(strings.ToLower(info.KafkaConnectClass), strings.ToLower(connectorType)) {
-			found = info
+			found = &info
 			break
 		}
 	}
@@ -118,7 +119,7 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 		// Provide helpful suggestions
 		var suggestions []string
 		for i := range connectors {
-			info := &connectors[i]
+			info := connectors[i]
 			if strings.Contains(strings.ToLower(info.Name), strings.ToLower(connectorType)) ||
 				strings.Contains(strings.ToLower(connectorType), strings.ToLower(info.Name)) {
 				suggestions = append(suggestions, info.Name)
@@ -127,12 +128,12 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 
 		errorMsg := fmt.Sprintf("connector type '%s' not found in registry", connectorType)
 		if len(suggestions) > 0 {
-			errorMsg += fmt.Sprintf("\n\nDid you mean one of these?\n")
+			errorMsg += "\n\nDid you mean one of these?\n"
 			for _, suggestion := range suggestions {
 				errorMsg += fmt.Sprintf("  • %s\n", suggestion)
 			}
 		}
-		return fmt.Errorf(errorMsg)
+		return errors.New(errorMsg)
 	}
 
 	fmt.Printf("🔗 %s\n", found.Name)

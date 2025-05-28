@@ -174,7 +174,7 @@ func (e *Engine) MigrateDirectory(inputDir string, outputDir string) ([]*Result,
 
 // mapTransforms converts Kafka Connect transforms to Conduit processors
 func (e *Engine) mapTransforms(transforms []parser.TransformConfig) []mappers.Processor {
-	var processors []mappers.Processor
+	processors := make([]mappers.Processor, 0, len(transforms))
 
 	for i, transform := range transforms {
 		processor := mappers.Processor{
@@ -187,7 +187,8 @@ func (e *Engine) mapTransforms(transforms []parser.TransformConfig) []mappers.Pr
 			processor.Plugin = transformInfo.ConduitEquivalent
 
 			// Copy relevant settings based on transform type
-			mapTransformSettings(&processor, &transform, transformInfo)
+			transformCopy := transform // Create a copy to prevent memory aliasing
+			mapTransformSettings(&processor, &transformCopy)
 		} else {
 			// For unknown transforms, create a placeholder
 			processor.Plugin = "custom:transform@latest"
@@ -211,7 +212,7 @@ func (e *Engine) mapTransforms(transforms []parser.TransformConfig) []mappers.Pr
 }
 
 // mapTransformSettings maps transform-specific settings
-func mapTransformSettings(processor *mappers.Processor, transform *parser.TransformConfig, info registry.TransformInfo) {
+func mapTransformSettings(processor *mappers.Processor, transform *parser.TransformConfig) {
 	switch transform.Class {
 	case "org.apache.kafka.connect.transforms.RegexRouter":
 		if regex, ok := transform.Config["regex"].(string); ok {

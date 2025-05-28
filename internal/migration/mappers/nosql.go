@@ -82,8 +82,8 @@ func (m *MongoDBMapper) Map(config *parser.ConnectorConfig, info registry.Connec
 	// Destination-specific settings
 	if connectorType == "destination" {
 		// Document ID strategy
-		if docIdStrategy := GetConfigValue(config, "document.id.strategy"); docIdStrategy != "" {
-			settings["document.id.strategy"] = mapDocumentIDStrategy(docIdStrategy)
+		if docIDStrategy := GetConfigValue(config, "document.id.strategy"); docIDStrategy != "" {
+			settings["document.id.strategy"] = mapDocumentIDStrategy(docIDStrategy)
 		}
 
 		// Write model strategy
@@ -121,7 +121,7 @@ func NewElasticsearchMapper() *ElasticsearchMapper {
 // Map converts Elasticsearch configuration
 func (m *ElasticsearchMapper) Map(config *parser.ConnectorConfig, info registry.ConnectorInfo) (*ConduitPipeline, error) {
 	if info.Status == registry.StatusUnsupported {
-		return nil, fmt.Errorf("Elasticsearch connector is not supported for migration")
+		return nil, fmt.Errorf("elasticsearch connector is not supported for migration")
 	}
 
 	// Elasticsearch is typically only a destination

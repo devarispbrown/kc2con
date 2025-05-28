@@ -21,11 +21,11 @@ type (
 type Context struct {
 	StartTime    time.Time
 	EndTime      time.Time
-	Metrics      *Metrics
-	DryRun       bool
-	Concurrent   int
 	OutputDir    string
 	RegistryPath string
+	Metrics      *Metrics
+	Concurrent   int
+	DryRun       bool
 }
 
 // Options configures migration behavior
@@ -86,25 +86,25 @@ type Summary struct {
 
 // ConnectorMigrationDetail provides detailed information about a connector migration
 type ConnectorMigrationDetail struct {
+	Issues          []Issue                `json:"issues,omitempty"`
+	Warnings        []string               `json:"warnings,omitempty"`
+	Settings        map[string]interface{} `json:"settings,omitempty"`
 	Name            string                 `json:"name"`
 	Class           string                 `json:"class"`
 	Type            string                 `json:"type"`
 	Status          string                 `json:"status"`
 	ConduitPlugin   string                 `json:"conduitPlugin"`
-	Issues          []Issue                `json:"issues,omitempty"`
-	Warnings        []string               `json:"warnings,omitempty"`
-	Settings        map[string]interface{} `json:"settings,omitempty"`
-	TransformCount  int                    `json:"transformCount"`
 	EstimatedEffort string                 `json:"estimatedEffort"`
+	TransformCount  int                    `json:"transformCount"`
 }
 
 // Issue represents an issue encountered during migration
 type Issue struct {
+	Timestamp   time.Time `json:"timestamp"`
 	Severity    string    `json:"severity"` // error, warning, info
 	Category    string    `json:"category"` // configuration, compatibility, security
 	Field       string    `json:"field,omitempty"`
 	Message     string    `json:"message"`
 	Suggestion  string    `json:"suggestion,omitempty"`
 	AutoFixable bool      `json:"autoFixable"`
-	Timestamp   time.Time `json:"timestamp"`
 }

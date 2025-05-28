@@ -81,7 +81,7 @@ producer.batch.size=16384
 	require.NoError(t, err)
 
 	assert.Equal(t, "localhost:9092", config.BootstrapServers)
-	assert.Equal(t, "connect-cluster", config.GroupId)
+	assert.Equal(t, "connect-cluster", config.GroupID)
 	assert.Equal(t, "http://localhost:8081", config.SchemaRegistry)
 	assert.Equal(t, "SSL", config.SecurityProtocol)
 	assert.Equal(t, "500", config.ConsumerOverrides["max.poll.records"])

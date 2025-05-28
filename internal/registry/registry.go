@@ -9,15 +9,15 @@ import (
 
 // ConnectorInfo contains information about how a Kafka Connect connector maps to Conduit
 type ConnectorInfo struct {
+	RequiredFields      []string            `json:"required_fields,omitempty"`
+	UnsupportedFeatures []string            `json:"unsupported_features,omitempty"`
 	Name                string              `json:"name"`
 	KafkaConnectClass   string              `json:"kafka_connect_class"`
 	ConduitEquivalent   string              `json:"conduit_equivalent"`
 	Status              CompatibilityStatus `json:"status"`
-	RequiredFields      []string            `json:"required_fields,omitempty"`
-	UnsupportedFeatures []string            `json:"unsupported_features,omitempty"`
-	ConfigMapper        ConfigMapperFunc    `json:"-"`
 	Notes               string              `json:"notes,omitempty"`
 	EstimatedEffort     string              `json:"estimated_effort"`
+	ConfigMapper        ConfigMapperFunc    `json:"-"`
 }
 
 // CompatibilityStatus represents the migration compatibility level
@@ -28,6 +28,21 @@ const (
 	StatusPartial     CompatibilityStatus = "partial"     // Most features work, some manual config needed
 	StatusManual      CompatibilityStatus = "manual"      // Requires custom implementation/manual work
 	StatusUnsupported CompatibilityStatus = "unsupported" // No Conduit equivalent exists
+)
+
+// Common status values
+const (
+	statusPartial   = "partial"
+	statusSupported = "supported"
+	typeWarning     = "warning"
+)
+
+// Common field names
+const (
+	fieldName       = "name"
+	fieldClass      = "class"
+	fieldType       = "type"
+	fieldTransforms = "transforms"
 )
 
 // ConfigMapperFunc transforms Kafka Connect config to Conduit format
@@ -41,34 +56,34 @@ type ConduitPipeline struct {
 
 // Pipeline represents a single Conduit pipeline
 type Pipeline struct {
+	Processors  []Processor            `yaml:"processors,omitempty"`
+	DLQ         map[string]interface{} `yaml:"dlq,omitempty"`
+	Source      Source                 `yaml:"source"`
+	Destination Destination            `yaml:"destination,omitempty"`
 	ID          string                 `yaml:"id"`
 	Status      string                 `yaml:"status,omitempty"`
 	ConnectorID string                 `yaml:"connectorId,omitempty"`
-	Source      Source                 `yaml:"source"`
-	Destination Destination            `yaml:"destination,omitempty"`
-	Processors  []Processor            `yaml:"processors,omitempty"`
-	DLQ         map[string]interface{} `yaml:"dlq,omitempty"`
 }
 
 // Source represents a Conduit source connector
 type Source struct {
+	Settings map[string]interface{} `yaml:"settings"`
 	Type     string                 `yaml:"type"`
 	Plugin   string                 `yaml:"plugin,omitempty"`
-	Settings map[string]interface{} `yaml:"settings"`
 }
 
 // Destination represents a Conduit destination connector
 type Destination struct {
+	Settings map[string]interface{} `yaml:"settings"`
 	Type     string                 `yaml:"type"`
 	Plugin   string                 `yaml:"plugin,omitempty"`
-	Settings map[string]interface{} `yaml:"settings"`
 }
 
 // Processor represents a Conduit processor
 type Processor struct {
+	Settings map[string]interface{} `yaml:"settings,omitempty"`
 	ID       string                 `yaml:"id"`
 	Plugin   string                 `yaml:"plugin"`
-	Settings map[string]interface{} `yaml:"settings,omitempty"`
 }
 
 // Issue represents a migration issue or warning
@@ -391,32 +406,32 @@ func (r *Registry) analyzeTransform(transform parser.TransformConfig) []Issue {
 
 	// Known transform mappings
 	transformMappings := map[string]string{
-		"org.apache.kafka.connect.transforms.RegexRouter":        "supported",
-		"org.apache.kafka.connect.transforms.TimestampConverter": "supported",
-		"org.apache.kafka.connect.transforms.InsertField":        "supported",
-		"org.apache.kafka.connect.transforms.ReplaceField":       "supported",
-		"org.apache.kafka.connect.transforms.MaskField":          "supported",
-		"org.apache.kafka.connect.transforms.Filter":             "supported",
-		"org.apache.kafka.connect.transforms.Cast":               "supported",
-		"org.apache.kafka.connect.transforms.ExtractField":       "supported",
-		"org.apache.kafka.connect.transforms.Flatten":            "supported",
-		"io.debezium.transforms.ExtractNewRecordState":           "supported",
-		"io.debezium.transforms.ByLogicalTableRouter":            "partial",
+		"org.apache.kafka.connect.transforms.RegexRouter":        statusSupported,
+		"org.apache.kafka.connect.transforms.TimestampConverter": statusSupported,
+		"org.apache.kafka.connect.transforms.InsertField":        statusSupported,
+		"org.apache.kafka.connect.transforms.ReplaceField":       statusSupported,
+		"org.apache.kafka.connect.transforms.MaskField":          statusSupported,
+		"org.apache.kafka.connect.transforms.Filter":             statusSupported,
+		"org.apache.kafka.connect.transforms.Cast":               statusSupported,
+		"org.apache.kafka.connect.transforms.ExtractField":       statusSupported,
+		"org.apache.kafka.connect.transforms.Flatten":            statusSupported,
+		"io.debezium.transforms.ExtractNewRecordState":           statusSupported,
+		"io.debezium.transforms.ByLogicalTableRouter":            statusPartial,
 	}
 
 	status, known := transformMappings[transform.Class]
 	if !known {
 		issues = append(issues, Issue{
-			Type:        "warning",
-			Field:       "transforms." + transform.Name,
+			Type:        typeWarning,
+			Field:       fieldTransforms + "." + transform.Name,
 			Message:     "Unknown transform: " + transform.Class,
 			Suggestion:  "This transform may need to be reimplemented as a Conduit processor",
 			AutoFixable: false,
 		})
-	} else if status == "partial" {
+	} else if status == statusPartial {
 		issues = append(issues, Issue{
-			Type:        "warning",
-			Field:       "transforms." + transform.Name,
+			Type:        typeWarning,
+			Field:       fieldTransforms + "." + transform.Name,
 			Message:     "Transform partially supported: " + transform.Class,
 			Suggestion:  "Some configuration may need manual adjustment",
 			AutoFixable: false,
@@ -430,9 +445,9 @@ func (r *Registry) analyzeTransform(transform parser.TransformConfig) []Issue {
 func hasField(config *parser.ConnectorConfig, field string) bool {
 	// Check in top-level fields
 	switch field {
-	case "name":
+	case fieldName:
 		return config.Name != ""
-	case "connector.class", "class":
+	case "connector.class", fieldClass:
 		return config.Class != ""
 	case "tasks.max":
 		return config.TasksMax > 0

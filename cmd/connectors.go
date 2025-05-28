@@ -246,9 +246,10 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 	getInput := func(prompt string, required bool) (string, error) {
 		for {
 			fmt.Print(prompt)
-			input, err := reader.ReadString('\n')
-			if err != nil {
-				return "", fmt.Errorf("failed to read input: %w", err)
+			var readErr error
+			input, readErr := reader.ReadString('\n')
+			if readErr != nil {
+				return "", fmt.Errorf("failed to read input: %w", readErr)
 			}
 			input = strings.TrimSpace(input)
 
@@ -277,7 +278,7 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 
 	// Validate category
 	categories := registryInstance.GetCategories()
-	var validCategories []string
+	validCategories := make([]string, 0, 5) // Pre-allocate for 5 categories
 	for catKey := range categories {
 		validCategories = append(validCategories, catKey)
 	}

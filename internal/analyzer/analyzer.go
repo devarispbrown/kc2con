@@ -23,6 +23,13 @@ const (
 	StatusUnsupported = "unsupported"
 )
 
+// Connector type constants
+const (
+	connectorTypeSource  = "source"
+	connectorTypeSink    = "sink"
+	connectorTypeUnknown = "unknown"
+)
+
 type Analyzer struct {
 	configDir string
 }
@@ -219,7 +226,8 @@ func (a *Analyzer) buildMigrationPlan(result *Result) MigrationPlan {
 	}
 
 	// Count by status
-	for _, connector := range result.Connectors {
+	for i := range result.Connectors {
+		connector := &result.Connectors[i]
 		switch connector.Status {
 		case StatusSupported:
 			plan.DirectMigration++
@@ -243,7 +251,8 @@ func (a *Analyzer) buildMigrationPlan(result *Result) MigrationPlan {
 func (a *Analyzer) estimateEffort(result *Result) string {
 	totalMinutes := 0
 
-	for _, connector := range result.Connectors {
+	for i := range result.Connectors {
+		connector := &result.Connectors[i]
 		switch connector.Status {
 		case StatusSupported:
 			totalMinutes += 30
@@ -259,7 +268,8 @@ func (a *Analyzer) estimateEffort(result *Result) string {
 	}
 
 	// Add time for transforms
-	for _, transform := range result.Transforms {
+	for i := range result.Transforms {
+		transform := &result.Transforms[i]
 		switch transform.Status {
 		case StatusSupported:
 			totalMinutes += 15
@@ -270,13 +280,15 @@ func (a *Analyzer) estimateEffort(result *Result) string {
 		}
 	}
 
-	if totalMinutes <= 60 {
+	// Convert minutes to human-readable format using switch
+	switch {
+	case totalMinutes <= 60:
 		return "< 1 hour"
-	} else if totalMinutes <= 240 {
+	case totalMinutes <= 240:
 		return fmt.Sprintf("%d-%d hours", totalMinutes/60, (totalMinutes/60)+1)
-	} else if totalMinutes <= 480 {
+	case totalMinutes <= 480:
 		return "4-8 hours"
-	} else {
+	default:
 		return "1-2 days"
 	}
 }
@@ -325,18 +337,22 @@ func (r *Result) OutputTable() error {
 	fmt.Println("│ Kafka Connect Item  │ Conduit Mapping  │ Status      │")
 	fmt.Println("├─────────────────────┼──────────────────┼─────────────┤")
 
-	for _, connector := range r.Connectors {
+	for i := range r.Connectors {
+		connector := &r.Connectors[i]
 		status := "✅ Supported"
 		statusStyle := successStyle
-		if connector.Status == "partial" {
+		switch connector.Status {
+		case StatusPartial:
 			status = "⚠️  Partial"
 			statusStyle = warningStyle
-		} else if connector.Status == "manual" {
+		case StatusManual:
 			status = "🔧 Manual"
 			statusStyle = warningStyle
-		} else if connector.Status == "unsupported" {
+		case StatusUnsupported:
 			status = "❌ Unsupported"
 			statusStyle = errorStyle
+		default:
+			// Leave as "✅ Supported" with successStyle
 		}
 
 		fmt.Printf("│ %-19s │ %-16s │ %s │\n",
@@ -353,7 +369,8 @@ func (r *Result) OutputTable() error {
 	hasErrors := false
 	hasWarnings := false
 
-	for _, connector := range r.Connectors {
+	for i := range r.Connectors {
+		connector := &r.Connectors[i]
 		if len(connector.Issues) > 0 {
 			hasIssues = true
 			for _, issue := range connector.Issues {
@@ -373,7 +390,8 @@ func (r *Result) OutputTable() error {
 		if hasErrors {
 			fmt.Println()
 			fmt.Println(errorStyle.Render("❌ Critical Issues Found:"))
-			for _, connector := range r.Connectors {
+			for i := range r.Connectors {
+				connector := &r.Connectors[i]
 				for _, issue := range connector.Issues {
 					if strings.Contains(issue, "❌") {
 						fmt.Printf("  %s: %s\n", connector.Name, strings.TrimPrefix(issue, "❌ "))
@@ -385,7 +403,8 @@ func (r *Result) OutputTable() error {
 		if hasWarnings {
 			fmt.Println()
 			fmt.Println(warningStyle.Render("⚠️  Warnings & Recommendations:"))
-			for _, connector := range r.Connectors {
+			for i := range r.Connectors {
+				connector := &r.Connectors[i]
 				for _, issue := range connector.Issues {
 					if strings.Contains(issue, "⚠️") {
 						fmt.Printf("  %s: %s\n", connector.Name, strings.TrimPrefix(issue, "⚠️ "))
@@ -406,11 +425,12 @@ func (r *Result) OutputTable() error {
 		partialTransforms := 0
 		manualTransforms := 0
 
-		for _, transform := range r.Transforms {
+		for i := range r.Transforms {
+			transform := &r.Transforms[i]
 			switch transform.Status {
-			case "supported":
+			case StatusSupported:
 				supportedTransforms++
-			case "partial":
+			case StatusPartial:
 				partialTransforms++
 			default:
 				manualTransforms++
@@ -481,11 +501,11 @@ func (r *Result) OutputYAML() error {
 func determineConnectorType(class string) string {
 	class = strings.ToLower(class)
 	if strings.Contains(class, "source") || strings.Contains(class, "debezium") {
-		return "source"
+		return connectorTypeSource
 	} else if strings.Contains(class, "sink") {
-		return "sink"
+		return connectorTypeSink
 	}
-	return "unknown"
+	return connectorTypeUnknown
 }
 
 func isKnownTransform(class string) bool {
@@ -523,11 +543,11 @@ func isPartialTransform(class string) bool {
 	return false
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max-3] + "..."
+	return s[:maxLen-3] + "..."
 }
 
 func NewAnalyzer(configDir string) (*Analyzer, error) {

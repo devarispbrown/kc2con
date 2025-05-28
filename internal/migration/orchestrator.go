@@ -690,7 +690,7 @@ echo "Rollback completed!"
 	// Save scripts to output directory
 	for _, script := range scripts {
 		scriptPath := filepath.Join(outputDir, script.Name)
-		if err := os.WriteFile(scriptPath, []byte(script.Content), 0o700); err != nil {
+		if err := os.WriteFile(scriptPath, []byte(script.Content), 0o600); err != nil {
 			log.Warn("Failed to save deployment script", "script", script.Name, "error", err)
 		}
 	}

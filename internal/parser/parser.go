@@ -11,11 +11,11 @@ import (
 
 // Kafka Connect config key constants
 const (
-	KeyConverter                = "key.converter"
-	ValueConverter              = "value.converter"
-	KeyConverterSchemaRegistry  = "key.converter.schema.registry.url"
+	KeyConverter                 = "key.converter"
+	ValueConverter               = "value.converter"
+	KeyConverterSchemaRegistry   = "key.converter.schema.registry.url"
 	ValueConverterSchemaRegistry = "value.converter.schema.registry.url"
-	SchemaRegistryURL           = "schema.registry.url"
+	SchemaRegistryURL            = "schema.registry.url"
 )
 
 // Parser handles parsing of Kafka Connect configuration files
@@ -23,17 +23,21 @@ type Parser struct{}
 
 // ConnectorConfig represents a parsed Kafka Connect connector configuration
 type ConnectorConfig struct {
-	Name            string                 `json:"name"`
-	Class           string                 `json:"connector.class"`
-	TasksMax        int                    `json:"tasks.max,omitempty"`
-	Topics          []string               `json:"topics,omitempty"`
-	TopicsRegex     string                 `json:"topics.regex,omitempty"`
-	KeyConverter    string                 `json:"key.converter,omitempty"`
-	ValueConverter  string                 `json:"value.converter,omitempty"`
-	HeaderConverter string                 `json:"header.converter,omitempty"`
-	Transforms      []TransformConfig      `json:"transforms,omitempty"`
-	Config          map[string]interface{} `json:"config,omitempty"`
-	RawConfig       map[string]interface{} `json:"-"` // Store all original config
+	// Group largest fields first (pointers/maps)
+	Config map[string]interface{} `json:"config,omitempty"`
+	RawConfig map[string]interface{} `json:"-"` // Store all original config
+	// Then slices
+	Transforms []TransformConfig `json:"transforms,omitempty"`
+	Topics []string `json:"topics,omitempty"`
+	// Then strings (64-bit aligned)
+	Class string `json:"connector.class"`
+	Name string `json:"name"`
+	KeyConverter string `json:"key.converter,omitempty"`
+	ValueConverter string `json:"value.converter,omitempty"`
+	HeaderConverter string `json:"header.converter,omitempty"`
+	TopicsRegex string `json:"topics.regex,omitempty"`
+	// Then int (32-bit)
+	TasksMax int `json:"tasks.max,omitempty"`
 }
 
 // TransformConfig represents a Single Message Transform (SMT) configuration
@@ -47,39 +51,33 @@ type TransformConfig struct {
 
 // WorkerConfig represents Kafka Connect worker configuration
 type WorkerConfig struct {
+	// Group largest fields first (pointers/maps)
+	ConsumerOverrides map[string]interface{} `json:"consumer,omitempty"`
+	ProducerOverrides map[string]interface{} `json:"producer,omitempty"`
+	AdminOverrides    map[string]interface{} `json:"admin,omitempty"`
+	RawConfig         map[string]interface{} `json:"-"`
+	// Then slices
+	PluginPath []string `json:"plugin.path,omitempty"`
+	// Then group strings with most used/accessed first (64-bit aligned)
 	BootstrapServers             string `json:"bootstrap.servers"`
-	GroupId                      string `json:"group.id,omitempty"`
+	GroupID                      string `json:"group.id,omitempty"` // Fixed ID naming
 	KeyConverter                 string `json:"key.converter,omitempty"`
 	ValueConverter               string `json:"value.converter,omitempty"`
 	KeyConverterSchemaRegistry   string `json:"key.converter.schema.registry.url,omitempty"`
 	ValueConverterSchemaRegistry string `json:"value.converter.schema.registry.url,omitempty"`
 	SchemaRegistry               string `json:"schema.registry.url,omitempty"`
-
-	// Security settings
-	SecurityProtocol      string `json:"security.protocol,omitempty"`
-	SaslMechanism         string `json:"sasl.mechanism,omitempty"`
-	SaslJaasConfig        string `json:"sasl.jaas.config,omitempty"`
-	SslTruststoreLocation string `json:"ssl.truststore.location,omitempty"`
-	SslKeystoreLocation   string `json:"ssl.keystore.location,omitempty"`
-
-	// Connect specific settings
-	ConfigStorageTopic             string `json:"config.storage.topic,omitempty"`
-	OffsetStorageTopic             string `json:"offset.storage.topic,omitempty"`
-	StatusStorageTopic             string `json:"status.storage.topic,omitempty"`
-	ConfigStorageReplicationFactor int    `json:"config.storage.replication.factor,omitempty"`
-	OffsetStorageReplicationFactor int    `json:"offset.storage.replication.factor,omitempty"`
-	StatusStorageReplicationFactor int    `json:"status.storage.replication.factor,omitempty"`
-
-	// Consumer/Producer overrides
-	ConsumerOverrides map[string]interface{} `json:"consumer,omitempty"`
-	ProducerOverrides map[string]interface{} `json:"producer,omitempty"`
-	AdminOverrides    map[string]interface{} `json:"admin,omitempty"`
-
-	// Plugin settings
-	PluginPath []string `json:"plugin.path,omitempty"`
-
-	// All other settings
-	RawConfig map[string]interface{} `json:"-"`
+	SecurityProtocol             string `json:"security.protocol,omitempty"`
+	SaslMechanism                string `json:"sasl.mechanism,omitempty"`
+	SaslJaasConfig               string `json:"sasl.jaas.config,omitempty"`
+	SslTruststoreLocation        string `json:"ssl.truststore.location,omitempty"`
+	SslKeystoreLocation          string `json:"ssl.keystore.location,omitempty"`
+	ConfigStorageTopic           string `json:"config.storage.topic,omitempty"`
+	OffsetStorageTopic           string `json:"offset.storage.topic,omitempty"`
+	StatusStorageTopic           string `json:"status.storage.topic,omitempty"`
+	// Then ints (32-bit)
+	ConfigStorageReplicationFactor int `json:"config.storage.replication.factor,omitempty"`
+	OffsetStorageReplicationFactor int `json:"offset.storage.replication.factor,omitempty"`
+	StatusStorageReplicationFactor int `json:"status.storage.replication.factor,omitempty"`
 }
 
 func New() *Parser {
@@ -114,7 +112,7 @@ func (p *Parser) ParseWorkerConfig(filePath string) (*WorkerConfig, error) {
 		case "bootstrap.servers":
 			config.BootstrapServers = value
 		case "group.id":
-			config.GroupId = value
+			config.GroupID = value
 		case KeyConverter:
 			config.KeyConverter = value
 		case ValueConverter:
@@ -557,12 +555,14 @@ func (p *Parser) ExtractSchemaRegistryConfig(workerConfig *WorkerConfig, connect
 
 // SchemaRegistryConfig represents schema registry specific settings
 type SchemaRegistryConfig struct {
-	URL                        string            `json:"url"`
-	BasicAuthUserInfo          string            `json:"basic.auth.user.info,omitempty"`
-	BasicAuthCredentialsSource string            `json:"basic.auth.credentials.source,omitempty"`
-	SslTruststoreLocation      string            `json:"ssl.truststore.location,omitempty"`
-	SslTruststorePassword      string            `json:"ssl.truststore.password,omitempty"`
-	SslKeystoreLocation        string            `json:"ssl.keystore.location,omitempty"`
-	SslKeystorePassword        string            `json:"ssl.keystore.password,omitempty"`
-	AdditionalConfig           map[string]string `json:"additional_config,omitempty"`
+	// Map field first (largest)
+	AdditionalConfig map[string]string `json:"additional_config,omitempty"`
+	// Then strings
+	URL                        string `json:"url"`
+	BasicAuthUserInfo          string `json:"basic.auth.user.info,omitempty"`
+	BasicAuthCredentialsSource string `json:"basic.auth.credentials.source,omitempty"`
+	SslTruststoreLocation      string `json:"ssl.truststore.location,omitempty"`
+	SslTruststorePassword      string `json:"ssl.truststore.password,omitempty"`
+	SslKeystoreLocation        string `json:"ssl.keystore.location,omitempty"`
+	SslKeystorePassword        string `json:"ssl.keystore.password,omitempty"`
 }
