@@ -1,0 +1,120 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build artifacts
+kc2con
+kc2con.exe
+kc2con-*
+dist/
+build/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test files and directories
+test-configs/
+*.log
+*.tmp
+
+# Configuration files with secrets (keep templates)
+*-local.yaml
+*-local.yml
+*-local.properties
+.env
+.env.local
+secrets/
+private/
+
+# Coverage reports
+coverage.out
+coverage.html
+coverage.xml
+
+# Profiling data
+*.prof
+*.pprof
+
+# Documentation build artifacts
+docs/_build/
+site/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# GoLand
+.idea/
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Local test artifacts
+example-configs/
+sample-configs/
+debug/
+experiments/
+
+# Generated files
+*.generated.go
+mock_*.go
+*_mock.go
+
+# Air live reload tool
+tmp/
+
+# Goreleaser
+dist/
+
+# Local configuration overrides
+kc2con.local.yaml
+.kc2con.local.yaml
