@@ -124,7 +124,7 @@ func TestExtractSchemaRegistryConfig(t *testing.T) {
 func createTempFile(t *testing.T, name, content string) string {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, name)
-	err := os.WriteFile(filePath, []byte(content), 0644)
+	err := os.WriteFile(filePath, []byte(content), 0o644)
 	require.NoError(t, err)
 	return filePath
 }

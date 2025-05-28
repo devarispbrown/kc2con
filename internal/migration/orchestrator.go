@@ -15,7 +15,7 @@ import (
 )
 
 // Note: Using type aliases for migration package types
-// ConduitPipeline, Pipeline, Connector, Processor, and Metrics 
+// ConduitPipeline, Pipeline, Connector, Processor, and Metrics
 // are aliased in types.go from mappers package
 
 // Orchestrator manages complex migration scenarios
@@ -39,7 +39,7 @@ type Plan struct {
 type ConnectorMigration struct {
 	SourcePath   string
 	Config       *parser.ConnectorConfig
-	Priority     int    // Migration order priority
+	Priority     int      // Migration order priority
 	Dependencies []string // Other connectors this depends on
 }
 
@@ -117,7 +117,7 @@ func (o *Orchestrator) MigrateBatch(plan *Plan, outputDir string, dryRun bool, m
 		Successful: []*Result{},
 		Failed:     []*FailedMigration{},
 		Warnings:   []string{},
-		Metrics:    &mappers.MigrationMetrics{
+		Metrics: &mappers.MigrationMetrics{
 			StartTime:      time.Now().Unix(),
 			ConnectorTypes: make(map[string]int),
 		},
@@ -149,24 +149,24 @@ func (o *Orchestrator) MigrateBatch(plan *Plan, outputDir string, dryRun bool, m
 		// Migrate connectors concurrently
 		var wg sync.WaitGroup
 		var mu sync.Mutex
-		
+
 		// Create semaphore for concurrency control
 		sem := make(chan struct{}, maxConcurrency)
-		
+
 		for _, migration := range plan.Connectors {
 			wg.Add(1)
 			go func(m *ConnectorMigration) {
 				defer wg.Done()
-				
+
 				// Acquire semaphore
 				sem <- struct{}{}
 				defer func() { <-sem }()
-				
+
 				migResult, err := o.engine.MigrateConnector(m.SourcePath)
-				
+
 				mu.Lock()
 				defer mu.Unlock()
-				
+
 				if err != nil {
 					result.Failed = append(result.Failed, &FailedMigration{
 						ConnectorName: m.Config.Name,
@@ -182,14 +182,14 @@ func (o *Orchestrator) MigrateBatch(plan *Plan, outputDir string, dryRun bool, m
 				o.applyGlobalSettings(migResult.Pipeline, plan.GlobalSettings)
 				result.Successful = append(result.Successful, migResult)
 				result.Metrics.Successful++
-				
+
 				// Track connector type
 				if m.Config.Class != "" {
 					result.Metrics.ConnectorTypes[m.Config.Class]++
 				}
 			}(migration)
 		}
-		
+
 		wg.Wait()
 	}
 
@@ -217,16 +217,16 @@ func (o *Orchestrator) MigrateBatch(plan *Plan, outputDir string, dryRun bool, m
 
 func (o *Orchestrator) findAllConfigs(dir string) (map[string]*parser.ConnectorConfig, error) {
 	configs := make(map[string]*parser.ConnectorConfig)
-	
+
 	// Use a worker pool for parallel file parsing
 	type parseResult struct {
 		path   string
 		config *parser.ConnectorConfig
 		err    error
 	}
-	
+
 	filePaths := []string{}
-	
+
 	// First, collect all potential config files
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -244,26 +244,26 @@ func (o *Orchestrator) findAllConfigs(dir string) (map[string]*parser.ConnectorC
 
 		return nil
 	})
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Process files concurrently
 	resultChan := make(chan parseResult, len(filePaths))
 	var wg sync.WaitGroup
-	
+
 	// Limit concurrent file operations
 	sem := make(chan struct{}, 5)
-	
+
 	for _, path := range filePaths {
 		wg.Add(1)
 		go func(p string) {
 			defer wg.Done()
-			
+
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			
+
 			// Check cache first
 			if cached, ok := o.configCache.Load(p); ok {
 				if config, ok := cached.(*parser.ConnectorConfig); ok {
@@ -271,7 +271,7 @@ func (o *Orchestrator) findAllConfigs(dir string) (map[string]*parser.ConnectorC
 					return
 				}
 			}
-			
+
 			// Parse the file
 			config, err := o.parser.ParseConnectorConfig(p)
 			if err == nil && config.Class != "" {
@@ -283,13 +283,13 @@ func (o *Orchestrator) findAllConfigs(dir string) (map[string]*parser.ConnectorC
 			}
 		}(path)
 	}
-	
+
 	// Close result channel when all workers are done
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
-	
+
 	// Collect results
 	for result := range resultChan {
 		if result.err == nil && result.config != nil {
@@ -338,7 +338,7 @@ func (o *Orchestrator) calculatePriority(config *parser.ConnectorConfig) int {
 	if strings.Contains(strings.ToLower(config.Class), "source") {
 		return 1
 	}
-	
+
 	// CDC connectors are critical
 	if strings.Contains(strings.ToLower(config.Class), "debezium") {
 		return 0
@@ -363,7 +363,7 @@ func (o *Orchestrator) detectDependencies(config *parser.ConnectorConfig, allCon
 				if other.Name == config.Name {
 					continue
 				}
-				
+
 				// Check if other connector produces to this topic
 				if strings.Contains(strings.ToLower(other.Class), "source") {
 					for _, otherTopic := range other.Topics {
@@ -512,7 +512,7 @@ func (o *Orchestrator) migrateCombined(plan *Plan) (*Result, error) {
 	// Migrate each connector
 	for i, migration := range plan.Connectors {
 		_, _ = o.engine.registry.Lookup(migration.Config.Class)
-		
+
 		// Map the connector using the engine's built-in mapping
 		subPipeline, err := o.engine.MigrateConnector(migration.SourcePath)
 		if err != nil {
@@ -582,13 +582,13 @@ echo "Importing Conduit pipelines..."
 		if len(result.Pipeline.Pipelines) == 0 {
 			continue
 		}
-		
+
 		pipelineName := result.Pipeline.Pipelines[0].Name
 		// Sanitize pipeline name for shell safety
 		safeName := shellEscape(pipelineName)
 		filename := GeneratePipelineID(pipelineName) + "-pipeline.yaml"
 		safeFilename := shellEscape(filename)
-		
+
 		importScript.Content += fmt.Sprintf(`echo "Importing %s..."
 conduit pipelines import --url "$CONDUIT_URL" %s || {
     echo "Failed to import %s"
@@ -626,11 +626,11 @@ failed=0
 		if len(result.Pipeline.Pipelines) == 0 {
 			continue
 		}
-		
+
 		pipelineID := result.Pipeline.Pipelines[0].ID
 		// Sanitize pipeline ID for shell safety
 		safeID := shellEscape(pipelineID)
-		
+
 		validationScript.Content += fmt.Sprintf(`echo "Checking pipeline %s..."
 STATUS=$(conduit pipelines get --url "$CONDUIT_URL" %s --format json | jq -r .status || echo "error")
 if [ "$STATUS" != "running" ]; then
@@ -672,10 +672,10 @@ echo "Rolling back Conduit pipelines..."
 		if len(result.Pipeline.Pipelines) == 0 {
 			continue
 		}
-		
+
 		pipelineID := result.Pipeline.Pipelines[0].ID
 		safeID := shellEscape(pipelineID)
-		
+
 		rollbackScript.Content += fmt.Sprintf(`echo "Removing pipeline %s..."
 conduit pipelines delete --url "$CONDUIT_URL" %s || echo "Pipeline may not exist"
 `, safeID, safeID)
@@ -690,7 +690,7 @@ echo "Rollback completed!"
 	// Save scripts to output directory
 	for _, script := range scripts {
 		scriptPath := filepath.Join(outputDir, script.Name)
-		if err := os.WriteFile(scriptPath, []byte(script.Content), 0700); err != nil {
+		if err := os.WriteFile(scriptPath, []byte(script.Content), 0o700); err != nil {
 			log.Warn("Failed to save deployment script", "script", script.Name, "error", err)
 		}
 	}
@@ -705,4 +705,3 @@ func shellEscape(s string) string {
 	// Wrap in single quotes
 	return "'" + escaped + "'"
 }
-

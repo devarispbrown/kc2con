@@ -9,6 +9,15 @@ import (
 	"strings"
 )
 
+// Kafka Connect config key constants
+const (
+	KeyConverter                = "key.converter"
+	ValueConverter              = "value.converter"
+	KeyConverterSchemaRegistry  = "key.converter.schema.registry.url"
+	ValueConverterSchemaRegistry = "value.converter.schema.registry.url"
+	SchemaRegistryURL           = "schema.registry.url"
+)
+
 // Parser handles parsing of Kafka Connect configuration files
 type Parser struct{}
 
@@ -106,15 +115,15 @@ func (p *Parser) ParseWorkerConfig(filePath string) (*WorkerConfig, error) {
 			config.BootstrapServers = value
 		case "group.id":
 			config.GroupId = value
-		case "key.converter":
+		case KeyConverter:
 			config.KeyConverter = value
-		case "value.converter":
+		case ValueConverter:
 			config.ValueConverter = value
-		case "key.converter.schema.registry.url":
+		case KeyConverterSchemaRegistry:
 			config.KeyConverterSchemaRegistry = value
-		case "value.converter.schema.registry.url":
+		case ValueConverterSchemaRegistry:
 			config.ValueConverterSchemaRegistry = value
-		case "schema.registry.url":
+		case SchemaRegistryURL:
 			config.SchemaRegistry = value
 		case "security.protocol":
 			config.SecurityProtocol = value
@@ -140,17 +149,18 @@ func (p *Parser) ParseWorkerConfig(filePath string) (*WorkerConfig, error) {
 			}
 		default:
 			// Handle prefixed configs (consumer., producer., admin.)
-			if strings.HasPrefix(key, "consumer.") {
+			switch {
+			case strings.HasPrefix(key, "consumer."):
 				if config.ConsumerOverrides == nil {
 					config.ConsumerOverrides = make(map[string]interface{})
 				}
 				config.ConsumerOverrides[strings.TrimPrefix(key, "consumer.")] = value
-			} else if strings.HasPrefix(key, "producer.") {
+			case strings.HasPrefix(key, "producer."):
 				if config.ProducerOverrides == nil {
 					config.ProducerOverrides = make(map[string]interface{})
 				}
 				config.ProducerOverrides[strings.TrimPrefix(key, "producer.")] = value
-			} else if strings.HasPrefix(key, "admin.") {
+			case strings.HasPrefix(key, "admin."):
 				if config.AdminOverrides == nil {
 					config.AdminOverrides = make(map[string]interface{})
 				}
@@ -212,11 +222,11 @@ func (p *Parser) parseConnectorJSON(filePath string) (*ConnectorConfig, error) {
 	}
 
 	// Extract converters
-	if keyConverter, ok := rawConfig["key.converter"].(string); ok {
+	if keyConverter, ok := rawConfig[KeyConverter].(string); ok {
 		config.KeyConverter = keyConverter
 	}
 
-	if valueConverter, ok := rawConfig["value.converter"].(string); ok {
+	if valueConverter, ok := rawConfig[ValueConverter].(string); ok {
 		config.ValueConverter = valueConverter
 	}
 
@@ -268,9 +278,9 @@ func (p *Parser) parseConnectorProperties(filePath string) (*ConnectorConfig, er
 			}
 		case "topics.regex":
 			config.TopicsRegex = value
-		case "key.converter":
+		case KeyConverter:
 			config.KeyConverter = value
-		case "value.converter":
+		case ValueConverter:
 			config.ValueConverter = value
 		case "header.converter":
 			config.HeaderConverter = value
@@ -517,7 +527,7 @@ func (p *Parser) ExtractSchemaRegistryConfig(workerConfig *WorkerConfig, connect
 
 		// Look for schema registry specific settings in raw config
 		for key, value := range workerConfig.RawConfig {
-			if strings.Contains(key, "schema.registry") && key != "schema.registry.url" {
+			if strings.Contains(key, "schema.registry") && key != SchemaRegistryURL {
 				if strVal, ok := value.(string); ok {
 					config.AdditionalConfig[key] = strVal
 				}
@@ -530,7 +540,7 @@ func (p *Parser) ExtractSchemaRegistryConfig(workerConfig *WorkerConfig, connect
 		for key, value := range connectorConfig.RawConfig {
 			if strings.Contains(key, "schema.registry") {
 				if strVal, ok := value.(string); ok {
-					if key == "key.converter.schema.registry.url" || key == "value.converter.schema.registry.url" {
+					if key == KeyConverterSchemaRegistry || key == ValueConverterSchemaRegistry {
 						if config.URL == "" {
 							config.URL = strVal
 						}

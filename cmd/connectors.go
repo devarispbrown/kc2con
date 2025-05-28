@@ -140,7 +140,7 @@ func runListConnectors(cmd *cobra.Command, args []string) error {
 			for catKey := range categories {
 				availableCategories = append(availableCategories, catKey)
 			}
-			return fmt.Errorf("category '%s' not found\n\nAvailable categories: %s", 
+			return fmt.Errorf("category '%s' not found\n\nAvailable categories: %s",
 				category, strings.Join(availableCategories, ", "))
 		}
 
@@ -185,7 +185,7 @@ func runListConnectors(cmd *cobra.Command, args []string) error {
 	unsupported := len(registryInstance.GetByStatus(registry.StatusUnsupported))
 
 	fmt.Printf("📊 Summary: %d total connectors\n", len(allConnectors))
-	fmt.Printf("   ✅ %d supported | ⚠️ %d partial | 🔧 %d manual | ❌ %d unsupported\n", 
+	fmt.Printf("   ✅ %d supported | ⚠️ %d partial | 🔧 %d manual | ❌ %d unsupported\n",
 		supported, partial, manual, unsupported)
 
 	return nil
@@ -251,7 +251,7 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 				return "", fmt.Errorf("failed to read input: %w", err)
 			}
 			input = strings.TrimSpace(input)
-			
+
 			if required && input == "" {
 				fmt.Println("❌ This field is required. Please enter a value.")
 				continue
@@ -287,7 +287,7 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Validate category exists
 		if _, exists := categories[input]; !exists {
 			fmt.Printf("❌ Invalid category '%s'. Valid options: %s\n", input, strings.Join(validCategories, ", "))
@@ -323,7 +323,7 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		valid := false
 		for _, status := range validStatuses {
 			if input == status {
@@ -331,7 +331,7 @@ func runAddConnector(cmd *cobra.Command, args []string) error {
 				break
 			}
 		}
-		
+
 		if valid {
 			connector.Status = input
 			break
@@ -402,7 +402,7 @@ func runValidateRegistry(cmd *cobra.Command, args []string) error {
 	registryInstance, err := registry.NewImproved(customConfigPath)
 	if err != nil {
 		fmt.Printf("❌ Configuration failed to load: %v\n", err)
-		
+
 		// Provide helpful debugging information
 		if customConfigPath != "" {
 			if _, statErr := os.Stat(customConfigPath); os.IsNotExist(statErr) {
@@ -433,7 +433,7 @@ func runValidateRegistry(cmd *cobra.Command, args []string) error {
 	// Validate connector mappings with detailed reporting
 	issues := 0
 	warnings := 0
-	
+
 	for class, connector := range allConnectors {
 		if connector.Name == "" {
 			fmt.Printf("❌ Connector %s missing name\n", class)
@@ -472,7 +472,7 @@ func runValidateRegistry(cmd *cobra.Command, args []string) error {
 	if warnings > 0 {
 		fmt.Printf("⚠️  Found %d warnings\n", warnings)
 	}
-	
+
 	if issues == 0 && warnings == 0 {
 		fmt.Println("✅ Registry validation passed - no issues found!")
 	} else if issues == 0 {

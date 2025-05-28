@@ -305,13 +305,13 @@ func (m *RedisMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 func mapKafkaSerializer(serializer string) string {
 	switch {
 	case strings.Contains(serializer, "ByteArraySerializer"):
-	return FormatBytes
+		return FormatBytes
 	case strings.Contains(serializer, "StringSerializer"):
-	return FormatString
+		return FormatString
 	case strings.Contains(serializer, "JsonSerializer"):
-	return FormatJSON
+		return FormatJSON
 	case strings.Contains(serializer, "AvroSerializer"):
-	return FormatAvro
+		return FormatAvro
 	default:
 		return "bytes"
 	}

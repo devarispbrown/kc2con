@@ -182,11 +182,9 @@ func (v *Validator) validateConnector(c mappers.Connector, path string, result *
 
 	if c.Plugin == "" {
 		result.addError(path, "Connector plugin is required", "plugin")
-	} else {
+	} else if !v.isValidPlugin(c.Plugin) {
 		// Validate plugin format
-		if !v.isValidPlugin(c.Plugin) {
-			result.addError(path, fmt.Sprintf("Invalid plugin format: %s", c.Plugin), "plugin")
-		}
+		result.addError(path, fmt.Sprintf("Invalid plugin format: %s", c.Plugin), "plugin")
 	}
 
 	if c.Name == "" {
@@ -205,11 +203,9 @@ func (v *Validator) validateProcessor(p mappers.Processor, path string, result *
 
 	if p.Plugin == "" {
 		result.addError(path, "Processor plugin is required", "plugin")
-	} else {
+	} else if !v.isValidPlugin(p.Plugin) {
 		// Validate plugin format
-		if !v.isValidPlugin(p.Plugin) {
-			result.addError(path, fmt.Sprintf("Invalid plugin format: %s", p.Plugin), "plugin")
-		}
+		result.addError(path, fmt.Sprintf("Invalid plugin format: %s", p.Plugin), "plugin")
 	}
 
 	// Validate condition syntax if present
@@ -259,11 +255,9 @@ func (v *Validator) validateConnectorSettings(c mappers.Connector, path string, 
 				}
 			}
 		}
-	} else {
+	} else if len(c.Settings) == 0 && v.strictMode {
 		// Unknown plugin type - basic validation only
-		if len(c.Settings) == 0 && v.strictMode {
-			result.addWarning(path, "Connector has no settings configured", "settings")
-		}
+		result.addWarning(path, "Connector has no settings configured", "settings")
 	}
 }
 

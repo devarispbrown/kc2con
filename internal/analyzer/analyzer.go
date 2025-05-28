@@ -15,6 +15,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Status constants
+const (
+	StatusSupported   = "supported"
+	StatusPartial     = "partial"
+	StatusManual      = "manual"
+	StatusUnsupported = "unsupported"
+)
+
 type Analyzer struct {
 	configDir string
 }
@@ -73,9 +81,9 @@ func (a *Analyzer) Analyze() (*Result, error) {
 	// Create parser and registry
 	configParser := parser.New()
 	registry, err := registry.NewImproved("")
-    if err != nil {
-        return nil, fmt.Errorf("failed to load registry: %w", err)
-    }
+	if err != nil {
+		return nil, fmt.Errorf("failed to load registry: %w", err)
+	}
 
 	var connectorConfigs []*parser.ConnectorConfig
 
@@ -175,11 +183,11 @@ func (a *Analyzer) processConnectorConfig(parser *parser.Parser, registry *regis
 
 		// Simple transform status determination
 		if isKnownTransform(transform.Class) {
-			transformInfo.Status = "supported"
+			transformInfo.Status = StatusSupported
 		} else if isPartialTransform(transform.Class) {
-			transformInfo.Status = "partial"
+			transformInfo.Status = StatusPartial
 		} else {
-			transformInfo.Status = "manual"
+			transformInfo.Status = StatusManual
 		}
 
 		result.Transforms = append(result.Transforms, transformInfo)
@@ -213,11 +221,11 @@ func (a *Analyzer) buildMigrationPlan(result *Result) MigrationPlan {
 	// Count by status
 	for _, connector := range result.Connectors {
 		switch connector.Status {
-		case "supported":
+		case StatusSupported:
 			plan.DirectMigration++
-		case "partial":
+		case StatusPartial:
 			plan.ManualMigration++
-		case "manual", "unsupported":
+		case StatusManual, StatusUnsupported:
 			plan.UnsupportedItems++
 		default:
 			plan.ManualMigration++
@@ -237,13 +245,13 @@ func (a *Analyzer) estimateEffort(result *Result) string {
 
 	for _, connector := range result.Connectors {
 		switch connector.Status {
-		case "supported":
+		case StatusSupported:
 			totalMinutes += 30
-		case "partial":
+		case StatusPartial:
 			totalMinutes += 90
-		case "manual":
+		case StatusManual:
 			totalMinutes += 240 // 4 hours
-		case "unsupported":
+		case StatusUnsupported:
 			totalMinutes += 480 // 8 hours
 		default:
 			totalMinutes += 120 // 2 hours
@@ -253,9 +261,9 @@ func (a *Analyzer) estimateEffort(result *Result) string {
 	// Add time for transforms
 	for _, transform := range result.Transforms {
 		switch transform.Status {
-		case "supported":
+		case StatusSupported:
 			totalMinutes += 15
-		case "partial":
+		case StatusPartial:
 			totalMinutes += 45
 		default:
 			totalMinutes += 120

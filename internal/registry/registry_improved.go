@@ -220,7 +220,7 @@ func (r *ImprovedRegistry) SaveConfiguration(outputPath string) error {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, data, 0600); err != nil {
+	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write configuration file: %w", err)
 	}
 

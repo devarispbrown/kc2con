@@ -73,4 +73,3 @@ func analyzeConnectorCommon(config *parser.ConnectorConfig, lookup func(string) 
 
 	return analysis
 }
-

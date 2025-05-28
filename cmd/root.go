@@ -19,7 +19,6 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color("#7D56F4")).
 			PaddingLeft(2)
-
 )
 
 // rootCmd represents the base command when called without any subcommands

@@ -416,7 +416,7 @@ func sanitizeID(name string) string {
 	sanitized := strings.ToLower(replacer.Replace(name))
 
 	// Ensure it starts with a letter
-	if len(sanitized) > 0 && (sanitized[0] < 'a' || sanitized[0] > 'z') {
+	if sanitized != "" && (sanitized[0] < 'a' || sanitized[0] > 'z') {
 		sanitized = "p" + sanitized
 	}
 

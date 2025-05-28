@@ -112,7 +112,7 @@ func createTestConnectorConfig(t *testing.T, dir string) {
 	require.NoError(t, err)
 
 	path := filepath.Join(dir, "test-connector.json")
-	err = os.WriteFile(path, data, 0644)
+	err = os.WriteFile(path, data, 0o644)
 	require.NoError(t, err)
 }
 
@@ -124,6 +124,6 @@ value.converter=org.apache.kafka.connect.json.JsonConverter
 `
 
 	path := filepath.Join(dir, "worker.properties")
-	err := os.WriteFile(path, []byte(config), 0644)
+	err := os.WriteFile(path, []byte(config), 0o644)
 	require.NoError(t, err)
 }

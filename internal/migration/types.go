@@ -58,10 +58,10 @@ type FailedMigration struct {
 
 // DeploymentScript represents a generated deployment script
 type DeploymentScript struct {
-	Name        string
-	Type        string // bash, powershell, etc.
-	Content     string
-	Executable  bool
+	Name       string
+	Type       string // bash, powershell, etc.
+	Content    string
+	Executable bool
 }
 
 // Report generates a comprehensive migration report
@@ -75,27 +75,27 @@ type Report struct {
 
 // Summary provides high-level migration statistics
 type Summary struct {
-	TotalConnectors     int           `json:"totalConnectors"`
-	Successful          int           `json:"successful"`
-	Failed              int           `json:"failed"`
-	WithWarnings        int           `json:"withWarnings"`
-	Duration            time.Duration `json:"duration"`
-	EstimatedEffort     string        `json:"estimatedEffort"`
-	MigrationReadiness  float64       `json:"migrationReadiness"`
+	TotalConnectors    int           `json:"totalConnectors"`
+	Successful         int           `json:"successful"`
+	Failed             int           `json:"failed"`
+	WithWarnings       int           `json:"withWarnings"`
+	Duration           time.Duration `json:"duration"`
+	EstimatedEffort    string        `json:"estimatedEffort"`
+	MigrationReadiness float64       `json:"migrationReadiness"`
 }
 
 // ConnectorMigrationDetail provides detailed information about a connector migration
 type ConnectorMigrationDetail struct {
-	Name              string                 `json:"name"`
-	Class             string                 `json:"class"`
-	Type              string                 `json:"type"`
-	Status            string                 `json:"status"`
-	ConduitPlugin     string                 `json:"conduitPlugin"`
-	Issues            []Issue                `json:"issues,omitempty"`
-	Warnings          []string               `json:"warnings,omitempty"`
-	Settings          map[string]interface{} `json:"settings,omitempty"`
-	TransformCount    int                    `json:"transformCount"`
-	EstimatedEffort   string                 `json:"estimatedEffort"`
+	Name            string                 `json:"name"`
+	Class           string                 `json:"class"`
+	Type            string                 `json:"type"`
+	Status          string                 `json:"status"`
+	ConduitPlugin   string                 `json:"conduitPlugin"`
+	Issues          []Issue                `json:"issues,omitempty"`
+	Warnings        []string               `json:"warnings,omitempty"`
+	Settings        map[string]interface{} `json:"settings,omitempty"`
+	TransformCount  int                    `json:"transformCount"`
+	EstimatedEffort string                 `json:"estimatedEffort"`
 }
 
 // Issue represents an issue encountered during migration

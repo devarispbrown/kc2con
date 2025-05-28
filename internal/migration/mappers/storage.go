@@ -67,7 +67,7 @@ func (m *S3Mapper) Map(config *parser.ConnectorConfig, info registry.ConnectorIn
 			} else if strings.Contains(strings.ToLower(formatClass), "avro") {
 				format = "avro"
 			} else if strings.Contains(strings.ToLower(formatClass), "parquet") {
-			format = FormatParquet
+				format = FormatParquet
 			}
 		}
 		settings["format"] = format

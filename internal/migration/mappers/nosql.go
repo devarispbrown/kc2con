@@ -8,6 +8,12 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// MongoDB operation constants
+const (
+	MongoOpReplaceOne  = "replace_one"
+	MongoTypeBSONObjID = "bson_objectid"
+)
+
 // MongoDBMapper handles MongoDB connector mapping
 type MongoDBMapper struct {
 	BaseMapper
@@ -351,7 +357,7 @@ func (m *DynamoDBMapper) Map(config *parser.ConnectorConfig, info registry.Conne
 func mapDocumentIDStrategy(strategy string) string {
 	switch strategy {
 	case "com.mongodb.kafka.connect.sink.processor.id.strategy.BsonOidStrategy":
-		return "bson_objectid"
+		return MongoTypeBSONObjID
 	case "com.mongodb.kafka.connect.sink.processor.id.strategy.UuidStrategy":
 		return "uuid"
 	case "com.mongodb.kafka.connect.sink.processor.id.strategy.ProvidedInKeyStrategy":
@@ -363,14 +369,14 @@ func mapDocumentIDStrategy(strategy string) string {
 	case "com.mongodb.kafka.connect.sink.processor.id.strategy.PartialValueStrategy":
 		return "partial_value"
 	default:
-		return "bson_objectid" // Safe default
+		return MongoTypeBSONObjID // Safe default
 	}
 }
 
 func mapWriteModelStrategy(strategy string) string {
 	switch {
 	case strings.Contains(strategy, "ReplaceOneDefaultStrategy"):
-		return "replace_one"
+		return MongoOpReplaceOne
 	case strings.Contains(strategy, "ReplaceOneBusinessKeyStrategy"):
 		return "replace_one_business_key"
 	case strings.Contains(strategy, "DeleteOneDefaultStrategy"):
@@ -380,6 +386,6 @@ func mapWriteModelStrategy(strategy string) string {
 	case strings.Contains(strategy, "InsertOneDefaultStrategy"):
 		return "insert_one"
 	default:
-		return "replace_one" // Safe default
+		return MongoOpReplaceOne // Safe default
 	}
 }

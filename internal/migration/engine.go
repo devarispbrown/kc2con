@@ -332,12 +332,12 @@ func SavePipeline(pipeline *mappers.ConduitPipeline, outputPath string) error {
 
 	// Ensure directory exists
 	dir := filepath.Dir(cleanPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Write file with restricted permissions
-	if err := os.WriteFile(cleanPath, data, 0600); err != nil {
+	if err := os.WriteFile(cleanPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write pipeline file: %w", err)
 	}
 

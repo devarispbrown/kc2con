@@ -13,18 +13,17 @@ const (
 	// JDBC insert modes
 	InsertModeUpsert = "upsert"
 	InsertModeUpdate = "update"
-	
+
 	// Database types
-	DatabaseMySQL      = "mysql"
-	DatabaseSQLServer  = "sqlserver"
-	DatabaseOracle     = "oracle"
-	DatabaseSQLite     = "sqlite"
-	
+	DatabaseMySQL     = "mysql"
+	DatabaseSQLServer = "sqlserver"
+	DatabaseOracle    = "oracle"
+	DatabaseSQLite    = "sqlite"
+
 	// JDBC capture modes
-	CaptureModeSnapshot = "snapshot"
+	CaptureModeSnapshot  = "snapshot"
 	CaptureModeTimestamp = "timestamp"
 )
-
 
 // JDBCSourceMapper handles JDBC source connector mapping
 type JDBCSourceMapper struct {
@@ -94,7 +93,7 @@ func (m *JDBCSourceMapper) Map(config *parser.ConnectorConfig, info registry.Con
 			settings["timestamp.column"] = col
 		}
 	case "bulk":
-	settings["cdc.mode"] = CaptureModeSnapshot
+		settings["cdc.mode"] = CaptureModeSnapshot
 		settings["snapshot.mode"] = "initial_only"
 	default:
 		settings["cdc.mode"] = "snapshot"

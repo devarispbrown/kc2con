@@ -122,12 +122,12 @@ func validateConfigDirectory(dir string) error {
 	// Check if directory contains any potential configuration files
 	hasConfigFiles := false
 	supportedExts := []string{".json", ".properties", ".yaml", ".yml"}
-	
+
 	for _, file := range files {
 		if file.IsDir() {
 			continue
 		}
-		
+
 		ext := filepath.Ext(strings.ToLower(file.Name()))
 		for _, supportedExt := range supportedExts {
 			if ext == supportedExt {
@@ -135,15 +135,15 @@ func validateConfigDirectory(dir string) error {
 				break
 			}
 		}
-		
+
 		if hasConfigFiles {
 			break
 		}
 	}
 
 	if !hasConfigFiles {
-		log.Warn("No configuration files found in directory", 
-			"dir", dir, 
+		log.Warn("No configuration files found in directory",
+			"dir", dir,
 			"supported_extensions", supportedExts)
 		fmt.Printf("⚠️  Warning: No configuration files found in %s\n", dir)
 		fmt.Printf("   Looking for files with extensions: %v\n", supportedExts)
@@ -153,4 +153,3 @@ func validateConfigDirectory(dir string) error {
 
 	return nil
 }
-

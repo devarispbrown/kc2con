@@ -47,7 +47,8 @@ func (m *Matrix) ShowAll() error {
 	fmt.Println("│ Connector Type                      │ Conduit Equivalent  │ Status      │")
 	fmt.Println("├─────────────────────────────────────┼─────────────────────┼─────────────┤")
 
-	for _, connectorInfo := range connectors {
+	for i := range connectors {
+		connectorInfo := &connectors[i]
 		status := "✅ Supported"
 		switch connectorInfo.Status {
 		case registry.StatusPartial:
@@ -103,11 +104,12 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 	var found *registry.ConnectorInfo
 
 	// Look for exact match first
-	for _, info := range connectors {
+	for i := range connectors {
+		info := &connectors[i]
 		if strings.EqualFold(info.Name, connectorType) ||
 			strings.Contains(strings.ToLower(info.Name), strings.ToLower(connectorType)) ||
 			strings.Contains(strings.ToLower(info.KafkaConnectClass), strings.ToLower(connectorType)) {
-			found = &info
+			found = info
 			break
 		}
 	}
@@ -115,7 +117,8 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 	if found == nil {
 		// Provide helpful suggestions
 		var suggestions []string
-		for _, info := range connectors {
+		for i := range connectors {
+			info := &connectors[i]
 			if strings.Contains(strings.ToLower(info.Name), strings.ToLower(connectorType)) ||
 				strings.Contains(strings.ToLower(connectorType), strings.ToLower(info.Name)) {
 				suggestions = append(suggestions, info.Name)
@@ -157,9 +160,9 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 	return nil
 }
 
-func truncateString(s string, max int) string {
-	if len(s) <= max {
+func truncateString(s string, length int) string {
+	if len(s) <= length {
 		return s
 	}
-	return s[:max-3] + "..."
+	return s[:length-3] + "..."
 }

@@ -116,7 +116,7 @@ transforms: []
 
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "test-config.yaml")
-	err := os.WriteFile(configPath, []byte(customConfig), 0644)
+	err := os.WriteFile(configPath, []byte(customConfig), 0o644)
 	require.NoError(t, err)
 
 	registry, err := NewImproved(configPath)
@@ -152,7 +152,7 @@ connectors:
 transforms: []
 `
 
-	err := os.WriteFile(configPath, []byte(initialConfig), 0644)
+	err := os.WriteFile(configPath, []byte(initialConfig), 0o644)
 	require.NoError(t, err)
 
 	registry, err := NewImproved(configPath)
@@ -177,7 +177,7 @@ connectors:
 transforms: []
 `
 
-	err = os.WriteFile(configPath, []byte(updatedConfig), 0644)
+	err = os.WriteFile(configPath, []byte(updatedConfig), 0o644)
 	require.NoError(t, err)
 
 	// Reload
