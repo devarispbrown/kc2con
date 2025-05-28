@@ -7,6 +7,15 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// Debezium snapshot mode constants
+const (
+	SnapshotModeInitial     = "initial"
+	SnapshotModeNever       = "never"
+	SnapshotModeWhenNeeded  = "when_needed"
+	SnapshotModeInitialOnly = "initial_only"
+	SnapshotModeAlways      = "always"
+)
+
 // DebeziumMySQLMapper handles MySQL CDC connector mapping
 type DebeziumMySQLMapper struct {
 	BaseMapper
@@ -249,15 +258,15 @@ func (m *DebeziumMongoDBMapper) Map(config *parser.ConnectorConfig, info registr
 // mapSnapshotMode converts Kafka Connect snapshot modes to Conduit equivalents
 func mapSnapshotMode(kafkaMode string) string {
 	switch kafkaMode {
-	case "initial":
+	case SnapshotModeInitial:
 		return "initial"
-	case "never":
+	case SnapshotModeNever:
 		return "never"
-	case "initial_only":
+	case SnapshotModeInitialOnly:
 		return "initial_only"
-	case "when_needed":
+	case SnapshotModeWhenNeeded:
 		return "when_needed"
-	case "always":
+	case SnapshotModeAlways:
 		return "always"
 	default:
 		return "initial" // Safe default

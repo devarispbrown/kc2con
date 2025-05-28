@@ -46,7 +46,9 @@ func init() {
 	analyzeCmd.Flags().StringVarP(&configDir, "config-dir", "d", ".", "Directory containing Kafka Connect configurations")
 	analyzeCmd.Flags().StringVarP(&outputFormat, "format", "f", "table", "Output format (table, json, yaml)")
 
-	analyzeCmd.MarkFlagRequired("config-dir")
+	if err := analyzeCmd.MarkFlagRequired("config-dir"); err != nil {
+		log.Fatalf("Failed to mark config-dir flag as required: %v", err)
+	}
 }
 
 func runAnalyze(cmd *cobra.Command, args []string) error {

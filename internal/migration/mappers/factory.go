@@ -8,6 +8,12 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// Connector type constants
+const (
+	ConnectorTypeSource      = "source"
+	ConnectorTypeDestination = "destination"
+)
+
 // MapperFactory creates the appropriate mapper for a connector
 type MapperFactory struct {
 	mappers map[string]ConnectorMapper
@@ -186,7 +192,7 @@ func determineConnectorType(class string) string {
 		return "source"
 	}
 	if strings.Contains(classLower, "sink") {
-		return "destination"
+	return ConnectorTypeDestination
 	}
 	
 	// Known source patterns
@@ -219,7 +225,7 @@ func determineConnectorType(class string) string {
 	}
 	
 	// Default to source if unclear
-	return "source"
+	return ConnectorTypeSource
 }
 
 // ValidateConnectorSettings validates settings against known capabilities

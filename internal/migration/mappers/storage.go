@@ -8,6 +8,11 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// File format constants
+const (
+	FormatParquet = "parquet"
+)
+
 // S3Mapper handles S3 connector mapping
 type S3Mapper struct {
 	BaseMapper
@@ -62,7 +67,7 @@ func (m *S3Mapper) Map(config *parser.ConnectorConfig, info registry.ConnectorIn
 			} else if strings.Contains(strings.ToLower(formatClass), "avro") {
 				format = "avro"
 			} else if strings.Contains(strings.ToLower(formatClass), "parquet") {
-				format = "parquet"
+			format = FormatParquet
 			}
 		}
 		settings["format"] = format

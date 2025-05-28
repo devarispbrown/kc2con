@@ -8,6 +8,24 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// JDBC related constants
+const (
+	// JDBC insert modes
+	InsertModeUpsert = "upsert"
+	InsertModeUpdate = "update"
+	
+	// Database types
+	DatabaseMySQL      = "mysql"
+	DatabaseSQLServer  = "sqlserver"
+	DatabaseOracle     = "oracle"
+	DatabaseSQLite     = "sqlite"
+	
+	// JDBC capture modes
+	CaptureModeSnapshot = "snapshot"
+	CaptureModeTimestamp = "timestamp"
+)
+
+
 // JDBCSourceMapper handles JDBC source connector mapping
 type JDBCSourceMapper struct {
 	BaseMapper
@@ -62,7 +80,7 @@ func (m *JDBCSourceMapper) Map(config *parser.ConnectorConfig, info registry.Con
 		if col := GetConfigValue(config, "incrementing.column.name"); col != "" {
 			settings["incrementing.column"] = col
 		}
-	case "timestamp":
+	case CaptureModeTimestamp:
 		settings["cdc.mode"] = "timestamp"
 		if col := GetConfigValue(config, "timestamp.column.name"); col != "" {
 			settings["timestamp.column"] = col
@@ -76,7 +94,7 @@ func (m *JDBCSourceMapper) Map(config *parser.ConnectorConfig, info registry.Con
 			settings["timestamp.column"] = col
 		}
 	case "bulk":
-		settings["cdc.mode"] = "snapshot"
+	settings["cdc.mode"] = CaptureModeSnapshot
 		settings["snapshot.mode"] = "initial_only"
 	default:
 		settings["cdc.mode"] = "snapshot"
@@ -144,9 +162,9 @@ func (m *JDBCSinkMapper) Map(config *parser.ConnectorConfig, info registry.Conne
 	switch insertMode {
 	case "insert":
 		settings["sdk.record.operation"] = "create"
-	case "upsert":
+	case InsertModeUpsert:
 		settings["sdk.record.operation"] = "upsert"
-	case "update":
+	case InsertModeUpdate:
 		settings["sdk.record.operation"] = "update"
 	default:
 		settings["sdk.record.operation"] = "upsert" // Safe default
@@ -192,13 +210,13 @@ func (m *BaseMapper) parseJDBCConnection(jdbcURL string, config *parser.Connecto
 	switch protocol {
 	case "postgresql":
 		dbType = "postgres"
-	case "mysql", "mariadb":
+	case DatabaseMySQL, "mariadb":
 		dbType = "mysql"
-	case "sqlserver", "microsoft:sqlserver":
+	case DatabaseSQLServer, "microsoft:sqlserver":
 		dbType = "sqlserver"
-	case "oracle":
+	case DatabaseOracle:
 		dbType = "oracle"
-	case "sqlite":
+	case DatabaseSQLite:
 		dbType = "sqlite"
 	default:
 		return "", nil, fmt.Errorf("unsupported JDBC database type: %s", protocol)

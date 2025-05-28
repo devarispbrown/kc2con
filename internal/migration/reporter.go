@@ -25,10 +25,10 @@ func NewReporter(format string) *Reporter {
 }
 
 // GenerateReport creates a comprehensive migration report
-func (r *Reporter) GenerateReport(result *BatchMigrationResult, options MigrationOptions) (*MigrationReport, error) {
-	report := &MigrationReport{
+func (r *Reporter) GenerateReport(result *BatchMigrationResult, options Options) (*Report, error) {
+	report := &Report{
 		GeneratedAt: time.Now(),
-		Summary: MigrationSummary{
+		Summary: Summary{
 			TotalConnectors:    result.Metrics.TotalConfigs,
 			Successful:         result.Metrics.Successful,
 			Failed:             result.Metrics.Failed,
@@ -37,7 +37,7 @@ func (r *Reporter) GenerateReport(result *BatchMigrationResult, options Migratio
 			MigrationReadiness: r.calculateReadiness(result.Metrics),
 		},
 		ConnectorDetails: []ConnectorMigrationDetail{},
-		Issues:           []MigrationIssue{},
+		Issues:           []Issue{},
 		Recommendations:  []string{},
 	}
 
@@ -59,7 +59,7 @@ func (r *Reporter) GenerateReport(result *BatchMigrationResult, options Migratio
 
 		// Add issues
 		for _, issue := range success.Issues {
-			report.Issues = append(report.Issues, MigrationIssue{
+			report.Issues = append(report.Issues, Issue{
 				Severity:   issue.Type,
 				Category:   "configuration",
 				Field:      issue.Field,
@@ -78,7 +78,7 @@ func (r *Reporter) GenerateReport(result *BatchMigrationResult, options Migratio
 		}
 		report.ConnectorDetails = append(report.ConnectorDetails, detail)
 
-		report.Issues = append(report.Issues, MigrationIssue{
+		report.Issues = append(report.Issues, Issue{
 			Severity:  "error",
 			Category:  "migration",
 			Message:   failed.Error.Error(),
@@ -93,7 +93,7 @@ func (r *Reporter) GenerateReport(result *BatchMigrationResult, options Migratio
 }
 
 // SaveReport saves the report to a file
-func (r *Reporter) SaveReport(report *MigrationReport, outputPath string) error {
+func (r *Reporter) SaveReport(report *Report, outputPath string) error {
 	var data []byte
 	var err error
 
@@ -119,7 +119,7 @@ func (r *Reporter) SaveReport(report *MigrationReport, outputPath string) error 
 	}
 
 	// Write file
-	if err := os.WriteFile(outputPath, data, 0644); err != nil {
+	if err := os.WriteFile(outputPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write report file: %w", err)
 	}
 
@@ -127,7 +127,7 @@ func (r *Reporter) SaveReport(report *MigrationReport, outputPath string) error 
 }
 
 // PrintSummary prints a colorful summary to the console
-func (r *Reporter) PrintSummary(report *MigrationReport) {
+func (r *Reporter) PrintSummary(report *Report) {
 	// Create styles
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -200,7 +200,7 @@ func (r *Reporter) PrintSummary(report *MigrationReport) {
 
 // Helper methods
 
-func (r *Reporter) calculateReadiness(metrics *MigrationMetrics) float64 {
+func (r *Reporter) calculateReadiness(metrics *Metrics) float64 {
 	if metrics.TotalConfigs == 0 {
 		return 0
 	}
@@ -278,7 +278,7 @@ func (r *Reporter) generateRecommendations(result *BatchMigrationResult) []strin
 	return recommendations
 }
 
-func (r *Reporter) formatMarkdown(report *MigrationReport) string {
+func (r *Reporter) formatMarkdown(report *Report) string {
 	var md strings.Builder
 
 	md.WriteString("# Migration Report\n\n")
@@ -309,7 +309,7 @@ func (r *Reporter) formatMarkdown(report *MigrationReport) string {
 		md.WriteString("## Issues\n\n")
 
 		// Group by severity
-		bySeverity := make(map[string][]MigrationIssue)
+		bySeverity := make(map[string][]Issue)
 		for _, issue := range report.Issues {
 			bySeverity[issue.Severity] = append(bySeverity[issue.Severity], issue)
 		}

@@ -363,68 +363,18 @@ func (r *Registry) registerBuiltinConnectors() {
 
 // AnalyzeConnector analyzes a Kafka Connect connector configuration
 func (r *Registry) AnalyzeConnector(config *parser.ConnectorConfig) ConnectorAnalysis {
-	analysis := ConnectorAnalysis{
-		ConnectorName:  config.Name,
-		ConnectorClass: config.Class,
-		Issues:         []Issue{},
+	// Create a lookup function that uses the Registry's Lookup method
+	lookup := func(class string) (ConnectorInfo, bool) {
+		return r.Lookup(class)
 	}
 
-	// Look up connector in registry
-	connectorInfo, found := r.Lookup(config.Class)
-	if !found {
-		// Unknown connector - treat as custom
-		connectorInfo = ConnectorInfo{
-			Name:              "Unknown Connector",
-			KafkaConnectClass: config.Class,
-			ConduitEquivalent: "manual-implementation-required",
-			Status:            StatusManual,
-			Notes:             "Connector not found in registry. Manual implementation required.",
-			EstimatedEffort:   "2-5 days",
-		}
-
-		analysis.Issues = append(analysis.Issues, Issue{
-			Type:       "warning",
-			Field:      "connector.class",
-			Message:    "Unknown connector class - not in compatibility registry",
-			Suggestion: "Check if this is a custom connector that needs manual implementation",
-		})
+	// Create a transform analyzer function that uses the Registry's analyzeTransform method
+	transformAnalyzer := func(transform parser.TransformConfig) []Issue {
+		return r.analyzeTransform(transform)
 	}
 
-	analysis.ConnectorInfo = connectorInfo
-
-	// Validate required fields
-	for _, requiredField := range connectorInfo.RequiredFields {
-		if !hasField(config, requiredField) {
-			analysis.Issues = append(analysis.Issues, Issue{
-				Type:        "error",
-				Field:       requiredField,
-				Message:     "Required field missing for migration",
-				Suggestion:  "Add this field to your connector configuration",
-				AutoFixable: false,
-			})
-		}
-	}
-
-	// Check for unsupported features
-	for _, unsupportedFeature := range connectorInfo.UnsupportedFeatures {
-		if hasUnsupportedFeature(config, unsupportedFeature) {
-			analysis.Issues = append(analysis.Issues, Issue{
-				Type:        "warning",
-				Field:       extractFieldFromFeature(unsupportedFeature),
-				Message:     "Unsupported feature detected: " + unsupportedFeature,
-				Suggestion:  "This feature may need manual configuration in Conduit",
-				AutoFixable: false,
-			})
-		}
-	}
-
-	// Analyze transforms
-	for _, transform := range config.Transforms {
-		transformIssues := r.analyzeTransform(transform)
-		analysis.Issues = append(analysis.Issues, transformIssues...)
-	}
-
-	return analysis
+	// Use the common helper function
+	return analyzeConnectorCommon(config, lookup, transformAnalyzer)
 }
 
 // ConnectorAnalysis represents the analysis result for a connector

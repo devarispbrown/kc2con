@@ -13,23 +13,23 @@ type (
 	Connector            = mappers.Connector
 	Processor            = mappers.Processor
 	DLQ                  = mappers.DLQ
-	MigrationMetrics     = mappers.MigrationMetrics
+	Metrics              = mappers.MigrationMetrics // This type is used as 'Metrics' in this package
 	SchemaRegistryConfig = mappers.SchemaRegistryConfig
 )
 
-// MigrationContext holds context information for a migration session
-type MigrationContext struct {
+// Context holds context information for a migration session
+type Context struct {
 	StartTime    time.Time
 	EndTime      time.Time
-	Metrics      *MigrationMetrics
+	Metrics      *Metrics
 	DryRun       bool
 	Concurrent   int
 	OutputDir    string
 	RegistryPath string
 }
 
-// MigrationOptions configures migration behavior
-type MigrationOptions struct {
+// Options configures migration behavior
+type Options struct {
 	DryRun          bool
 	Validate        bool
 	Force           bool
@@ -41,11 +41,11 @@ type MigrationOptions struct {
 
 // BatchMigrationResult contains results from batch migration
 type BatchMigrationResult struct {
-	Successful        []*MigrationResult
+	Successful        []*Result
 	Failed            []*FailedMigration
 	Warnings          []string
 	DeploymentScripts []DeploymentScript
-	Metrics           *MigrationMetrics
+	Metrics           *Metrics
 }
 
 // FailedMigration represents a failed connector migration
@@ -64,17 +64,17 @@ type DeploymentScript struct {
 	Executable  bool
 }
 
-// MigrationReport generates a comprehensive migration report
-type MigrationReport struct {
+// Report generates a comprehensive migration report
+type Report struct {
 	GeneratedAt      time.Time                  `json:"generatedAt"`
-	Summary          MigrationSummary           `json:"summary"`
+	Summary          Summary                    `json:"summary"`
 	ConnectorDetails []ConnectorMigrationDetail `json:"connectorDetails"`
-	Issues           []MigrationIssue           `json:"issues"`
+	Issues           []Issue                    `json:"issues"`
 	Recommendations  []string                   `json:"recommendations"`
 }
 
-// MigrationSummary provides high-level migration statistics
-type MigrationSummary struct {
+// Summary provides high-level migration statistics
+type Summary struct {
 	TotalConnectors     int           `json:"totalConnectors"`
 	Successful          int           `json:"successful"`
 	Failed              int           `json:"failed"`
@@ -91,15 +91,15 @@ type ConnectorMigrationDetail struct {
 	Type              string                 `json:"type"`
 	Status            string                 `json:"status"`
 	ConduitPlugin     string                 `json:"conduitPlugin"`
-	Issues            []MigrationIssue       `json:"issues,omitempty"`
+	Issues            []Issue                `json:"issues,omitempty"`
 	Warnings          []string               `json:"warnings,omitempty"`
 	Settings          map[string]interface{} `json:"settings,omitempty"`
 	TransformCount    int                    `json:"transformCount"`
 	EstimatedEffort   string                 `json:"estimatedEffort"`
 }
 
-// MigrationIssue represents an issue encountered during migration
-type MigrationIssue struct {
+// Issue represents an issue encountered during migration
+type Issue struct {
 	Severity    string    `json:"severity"` // error, warning, info
 	Category    string    `json:"category"` // configuration, compatibility, security
 	Field       string    `json:"field,omitempty"`

@@ -59,7 +59,9 @@ func init() {
 	migrateCmd.Flags().BoolVar(&skipUnsupported, "skip-unsupported", false, "Skip unsupported connectors instead of failing")
 	migrateCmd.Flags().BoolVar(&generateWrapper, "generate-wrapper", false, "Generate Kafka Connect wrapper config for unsupported connectors")
 
-	migrateCmd.MarkFlagRequired("config-dir")
+	if err := migrateCmd.MarkFlagRequired("config-dir"); err != nil {
+		log.Fatalf("Failed to mark config-dir flag as required: %v", err)
+	}
 }
 
 func runMigrate(cmd *cobra.Command, args []string) error {
@@ -311,7 +313,7 @@ func migrateConnector(config *parser.ConnectorConfig, gen *generator.Generator, 
 			return result
 		}
 
-		if err := os.WriteFile(result.PipelineFile, data, 0644); err != nil {
+		if err := os.WriteFile(result.PipelineFile, data, 0600); err != nil {
 			result.Error = fmt.Errorf("failed to write pipeline file: %w", err)
 			return result
 		}
@@ -376,7 +378,7 @@ func generateWrapperConfig(config *parser.ConnectorConfig, outputDir string) Mig
 			return result
 		}
 
-		if err := os.WriteFile(result.PipelineFile, data, 0644); err != nil {
+		if err := os.WriteFile(result.PipelineFile, data, 0600); err != nil {
 			result.Error = fmt.Errorf("failed to write pipeline file: %w", err)
 			return result
 		}
@@ -498,7 +500,7 @@ echo "To check status:"
 echo "  conduit pipeline list"
 `
 
-	return os.WriteFile(scriptPath, []byte(content), 0755)
+	return os.WriteFile(scriptPath, []byte(content), 0700)
 }
 
 func generateMigrationGuide(outputDir string, results []MigrationResult) error {
@@ -551,7 +553,7 @@ This directory contains the migrated Conduit pipeline configurations.
 - [Connector Reference](https://conduit.io/docs/connectors)
 `
 
-	return os.WriteFile(guidePath, []byte(content), 0644)
+	return os.WriteFile(guidePath, []byte(content), 0600)
 }
 
 func generateReadme(outputDir string) error {
@@ -584,5 +586,5 @@ export CONDUIT_URL=http://your-conduit-host:8080
 ` + "```" + `
 `
 
-	return os.WriteFile(readmePath, []byte(content), 0644)
+	return os.WriteFile(readmePath, []byte(content), 0600)
 }

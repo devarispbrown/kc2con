@@ -20,8 +20,8 @@ type Engine struct {
 	parser        *parser.Parser
 }
 
-// MigrationResult contains the result of a migration
-type MigrationResult struct {
+// Result contains the result of a migration
+type Result struct {
 	Pipeline   *mappers.ConduitPipeline
 	SourceFile string
 	Issues     []registry.Issue
@@ -45,7 +45,7 @@ func NewEngine(registryPath string) (*Engine, error) {
 }
 
 // MigrateConnector migrates a single Kafka Connect connector to Conduit
-func (e *Engine) MigrateConnector(configPath string) (*MigrationResult, error) {
+func (e *Engine) MigrateConnector(configPath string) (*Result, error) {
 	log.Debug("Migrating connector", "path", configPath)
 
 	// Parse the connector configuration
@@ -99,7 +99,7 @@ func (e *Engine) MigrateConnector(configPath string) (*MigrationResult, error) {
 		})
 	}
 
-	result := &MigrationResult{
+	result := &Result{
 		Pipeline:   pipeline,
 		SourceFile: configPath,
 		Issues:     analysis.Issues,
@@ -121,8 +121,8 @@ func (e *Engine) MigrateConnector(configPath string) (*MigrationResult, error) {
 }
 
 // MigrateDirectory migrates all connectors in a directory
-func (e *Engine) MigrateDirectory(inputDir string, outputDir string) ([]*MigrationResult, error) {
-	var results []*MigrationResult
+func (e *Engine) MigrateDirectory(inputDir string, outputDir string) ([]*Result, error) {
+	var results []*Result
 
 	// Validate input directory
 	if err := validateDirectory(inputDir); err != nil {
@@ -145,7 +145,7 @@ func (e *Engine) MigrateDirectory(inputDir string, outputDir string) ([]*Migrati
 		if err != nil {
 			log.Error("Failed to migrate connector", "file", file, "error", err)
 			// Continue with other connectors
-			results = append(results, &MigrationResult{
+			results = append(results, &Result{
 				SourceFile: file,
 				Issues: []registry.Issue{{
 					Type:    "error",
@@ -337,7 +337,7 @@ func SavePipeline(pipeline *mappers.ConduitPipeline, outputPath string) error {
 	}
 
 	// Write file with restricted permissions
-	if err := os.WriteFile(cleanPath, data, 0644); err != nil {
+	if err := os.WriteFile(cleanPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write pipeline file: %w", err)
 	}
 

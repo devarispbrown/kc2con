@@ -10,8 +10,13 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/devarispbrown/kc2con/internal/migration/mappers"
 	"github.com/devarispbrown/kc2con/internal/parser"
 )
+
+// Note: Using type aliases for migration package types
+// ConduitPipeline, Pipeline, Connector, Processor, and Metrics 
+// are aliased in types.go from mappers package
 
 // Orchestrator manages complex migration scenarios
 type Orchestrator struct {
@@ -21,8 +26,8 @@ type Orchestrator struct {
 	configCache  sync.Map // Cache for parsed configurations
 }
 
-// MigrationPlan represents a complete migration plan
-type MigrationPlan struct {
+// Plan represents a complete migration plan
+type Plan struct {
 	Connectors      []*ConnectorMigration
 	WorkerConfig    *parser.WorkerConfig
 	GlobalSettings  map[string]interface{}
@@ -52,10 +57,10 @@ func NewOrchestrator(registryPath string) (*Orchestrator, error) {
 }
 
 // CreateMigrationPlan analyzes a directory and creates a comprehensive migration plan
-func (o *Orchestrator) CreateMigrationPlan(configDir string) (*MigrationPlan, error) {
+func (o *Orchestrator) CreateMigrationPlan(configDir string) (*Plan, error) {
 	log.Debug("Creating migration plan", "dir", configDir)
 
-	plan := &MigrationPlan{
+	plan := &Plan{
 		Connectors:     []*ConnectorMigration{},
 		GlobalSettings: make(map[string]interface{}),
 		Dependencies:   make(map[string][]string),
@@ -107,12 +112,12 @@ func (o *Orchestrator) CreateMigrationPlan(configDir string) (*MigrationPlan, er
 }
 
 // MigrateBatch performs a batch migration of multiple connectors with concurrency support
-func (o *Orchestrator) MigrateBatch(plan *MigrationPlan, outputDir string, dryRun bool, maxConcurrency int) (*BatchMigrationResult, error) {
+func (o *Orchestrator) MigrateBatch(plan *Plan, outputDir string, dryRun bool, maxConcurrency int) (*BatchMigrationResult, error) {
 	result := &BatchMigrationResult{
-		Successful: []*MigrationResult{},
+		Successful: []*Result{},
 		Failed:     []*FailedMigration{},
 		Warnings:   []string{},
-		Metrics:    &MigrationMetrics{
+		Metrics:    &mappers.MigrationMetrics{
 			StartTime:      time.Now().Unix(),
 			ConnectorTypes: make(map[string]int),
 		},
@@ -391,7 +396,7 @@ func (o *Orchestrator) sortMigrations(migrations []*ConnectorMigration) {
 	})
 }
 
-func (o *Orchestrator) extractGlobalSettings(plan *MigrationPlan) {
+func (o *Orchestrator) extractGlobalSettings(plan *Plan) {
 	if plan.WorkerConfig != nil {
 		// Extract schema registry settings
 		if plan.WorkerConfig.SchemaRegistry != "" {
@@ -413,7 +418,7 @@ func (o *Orchestrator) extractGlobalSettings(plan *MigrationPlan) {
 	}
 }
 
-func (o *Orchestrator) estimateEffort(plan *MigrationPlan) string {
+func (o *Orchestrator) estimateEffort(plan *Plan) string {
 	totalMinutes := 0
 
 	for _, migration := range plan.Connectors {
@@ -428,12 +433,16 @@ func (o *Orchestrator) estimateEffort(plan *MigrationPlan) string {
 		effort := info.EstimatedEffort
 		if strings.Contains(effort, "minutes") {
 			var minutes int
-			fmt.Sscanf(effort, "%d minutes", &minutes)
-			totalMinutes += minutes
+			_, err := fmt.Sscanf(effort, "%d minutes", &minutes)
+			if err == nil {
+				totalMinutes += minutes
+			}
 		} else if strings.Contains(effort, "hour") {
 			var hours int
-			fmt.Sscanf(effort, "%d hour", &hours)
-			totalMinutes += hours * 60
+			_, err := fmt.Sscanf(effort, "%d hour", &hours)
+			if err == nil {
+				totalMinutes += hours * 60
+			}
 		} else {
 			totalMinutes += 60 // Default 1 hour
 		}
@@ -451,7 +460,7 @@ func (o *Orchestrator) estimateEffort(plan *MigrationPlan) string {
 	}
 }
 
-func (o *Orchestrator) shouldCombinePipelines(plan *MigrationPlan) bool {
+func (o *Orchestrator) shouldCombinePipelines(plan *Plan) bool {
 	// Check if connectors are part of a data flow
 	if len(plan.Dependencies) > 0 {
 		return true
@@ -482,17 +491,17 @@ func (o *Orchestrator) shouldCombinePipelines(plan *MigrationPlan) bool {
 	return false
 }
 
-func (o *Orchestrator) migrateCombined(plan *MigrationPlan) (*MigrationResult, error) {
+func (o *Orchestrator) migrateCombined(plan *Plan) (*Result, error) {
 	// Create a combined pipeline with multiple connectors
-	pipeline := &ConduitPipeline{
+	pipeline := &mappers.ConduitPipeline{
 		Version:    "2.2",
-		Pipelines:  []Pipeline{},
-		Connectors: []Connector{},
-		Processors: []Processor{},
+		Pipelines:  []mappers.Pipeline{},
+		Connectors: []mappers.Connector{},
+		Processors: []mappers.Processor{},
 	}
 
 	pipelineID := "combined-migration-pipeline"
-	mainPipeline := Pipeline{
+	mainPipeline := mappers.Pipeline{
 		ID:          pipelineID,
 		Status:      "running",
 		Name:        "Combined Migration Pipeline",
@@ -525,16 +534,16 @@ func (o *Orchestrator) migrateCombined(plan *MigrationPlan) (*MigrationResult, e
 		}
 	}
 
-	pipeline.Pipelines = []Pipeline{mainPipeline}
+	pipeline.Pipelines = []mappers.Pipeline{mainPipeline}
 
-	return &MigrationResult{
+	return &Result{
 		Pipeline:   pipeline,
 		SourceFile: "combined",
 		Warnings:   []string{"Combined multiple connectors into a single pipeline"},
 	}, nil
 }
 
-func (o *Orchestrator) applyGlobalSettings(pipeline *ConduitPipeline, globalSettings map[string]interface{}) {
+func (o *Orchestrator) applyGlobalSettings(pipeline *mappers.ConduitPipeline, globalSettings map[string]interface{}) {
 	// Apply global settings to each connector
 	for i := range pipeline.Connectors {
 		// Schema registry settings
@@ -549,7 +558,7 @@ func (o *Orchestrator) applyGlobalSettings(pipeline *ConduitPipeline, globalSett
 	}
 }
 
-func (o *Orchestrator) generateDeploymentScripts(results []*MigrationResult, outputDir string) []DeploymentScript {
+func (o *Orchestrator) generateDeploymentScripts(results []*Result, outputDir string) []DeploymentScript {
 	var scripts []DeploymentScript
 
 	// Generate import script
@@ -681,7 +690,7 @@ echo "Rollback completed!"
 	// Save scripts to output directory
 	for _, script := range scripts {
 		scriptPath := filepath.Join(outputDir, script.Name)
-		if err := os.WriteFile(scriptPath, []byte(script.Content), 0755); err != nil {
+		if err := os.WriteFile(scriptPath, []byte(script.Content), 0700); err != nil {
 			log.Warn("Failed to save deployment script", "script", script.Name, "error", err)
 		}
 	}

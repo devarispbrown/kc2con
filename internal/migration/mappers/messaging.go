@@ -8,6 +8,14 @@ import (
 	"github.com/devarispbrown/kc2con/internal/registry"
 )
 
+// Data format constants
+const (
+	FormatAvro   = "avro"
+	FormatString = "string"
+	FormatBytes  = "bytes"
+	FormatJSON   = "json"
+)
+
 // KafkaMapper handles Kafka connector mapping
 type KafkaMapper struct {
 	BaseMapper
@@ -297,13 +305,13 @@ func (m *RedisMapper) Map(config *parser.ConnectorConfig, info registry.Connecto
 func mapKafkaSerializer(serializer string) string {
 	switch {
 	case strings.Contains(serializer, "ByteArraySerializer"):
-		return "bytes"
+	return FormatBytes
 	case strings.Contains(serializer, "StringSerializer"):
-		return "string"
+	return FormatString
 	case strings.Contains(serializer, "JsonSerializer"):
-		return "json"
+	return FormatJSON
 	case strings.Contains(serializer, "AvroSerializer"):
-		return "avro"
+	return FormatAvro
 	default:
 		return "bytes"
 	}
