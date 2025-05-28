@@ -1,0 +1,23 @@
+version: "2.2"
+pipelines:
+    - id: postgres-sink
+      status: stopped
+      connectorId: postgres-sink
+      source:
+        type: source
+        plugin: builtin:generator
+        settings:
+            TODO: Replace with your actual source
+            format.options.id.type: int
+            format.type: structured
+      destination:
+        type: destination
+        plugin: builtin:postgres
+        settings:
+            TODO_parse_url: Parse JDBC URL to extract host, port, database
+            insert.mode: upsert
+            password: postgres123
+            pk.fields: id
+            pk.mode: record_key
+            url: jdbc:postgresql://postgres:5432/targetdb
+            user: postgres

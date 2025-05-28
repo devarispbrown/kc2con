@@ -1,0 +1,31 @@
+version: "2.2"
+pipelines:
+    - id: mysql-source-customers
+      status: stopped
+      connectorId: mysql-source-customers
+      source:
+        type: source
+        plugin: builtin:mysql
+        settings:
+            TODO_review: Generic mapping applied - review all settings
+            database.history.kafka.bootstrap.servers: kafka:9092
+            database.history.kafka.topic: schema-changes.inventory
+            database.hostname: mysql.example.com
+            database.include.list: inventory
+            database.password: dbz123
+            database.port: "3306"
+            database.server.id: "184054"
+            database.server.name: dbserver1
+            database.user: debezium
+            table.include.list: inventory.customers,inventory.orders
+      destination:
+        type: destination
+        plugin: builtin:log
+        settings:
+            TODO: Replace with your actual destination
+            level: info
+      processors:
+        - id: unwrap
+          plugin: unwrap.debezium
+          settings:
+            drop.tombstones: "false"

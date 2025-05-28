@@ -1,0 +1,18 @@
+version: "2.2"
+pipelines:
+    - id: s3-backup
+      status: stopped
+      connectorId: s3-backup
+      source:
+        type: source
+        plugin: builtin:generator
+        settings:
+            TODO: Replace with your actual source
+            format.options.id.type: int
+            format.type: structured
+      destination:
+        type: destination
+        plugin: builtin:s3
+        settings:
+            aws.bucket: my-data-lake
+            aws.region: us-east-1
