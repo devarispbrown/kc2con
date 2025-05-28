@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/devarispbrown/kc2con/internal/analyzer"
@@ -50,27 +52,103 @@ func init() {
 func runAnalyze(cmd *cobra.Command, args []string) error {
 	log.Info("Starting Kafka Connect configuration analysis", "dir", configDir)
 
-	// Validate config directory
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		return fmt.Errorf("configuration directory does not exist: %s", configDir)
+	// Enhanced directory validation
+	if err := validateConfigDirectory(configDir); err != nil {
+		return err
 	}
 
-	// Create analyzer
-	analyzer := analyzer.New(configDir)
+	// Create analyzer with proper error handling
+	analyzer, err := analyzer.NewAnalyzer(configDir)
+	if err != nil {
+		return fmt.Errorf("failed to create analyzer: %w", err)
+	}
 
-	// Run analysis
+	// Run analysis with comprehensive error handling
 	result, err := analyzer.Analyze()
 	if err != nil {
 		return fmt.Errorf("analysis failed: %w", err)
 	}
 
-	// Display results based on format
+	// Validate result before output
+	if result == nil {
+		return fmt.Errorf("analysis returned nil result")
+	}
+
+	// Display results based on format with error handling
 	switch outputFormat {
 	case "json":
-		return result.OutputJSON()
+		if err := result.OutputJSON(); err != nil {
+			return fmt.Errorf("failed to output JSON: %w", err)
+		}
 	case "yaml":
-		return result.OutputYAML()
+		if err := result.OutputYAML(); err != nil {
+			return fmt.Errorf("failed to output YAML: %w", err)
+		}
+	case "table":
+		if err := result.OutputTable(); err != nil {
+			return fmt.Errorf("failed to output table: %w", err)
+		}
 	default:
-		return result.OutputTable()
+		return fmt.Errorf("unsupported output format '%s' - supported formats: table, json, yaml", outputFormat)
 	}
+
+	return nil
 }
+
+// validateConfigDirectory performs comprehensive directory validation
+func validateConfigDirectory(dir string) error {
+	// Check if directory exists
+	info, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("configuration directory does not exist: %s", dir)
+	}
+	if err != nil {
+		return fmt.Errorf("cannot access configuration directory %s: %w", dir, err)
+	}
+
+	// Check if it's actually a directory
+	if !info.IsDir() {
+		return fmt.Errorf("path %s is not a directory", dir)
+	}
+
+	// Check if directory is readable
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("cannot read configuration directory %s: %w", dir, err)
+	}
+
+	// Check if directory contains any potential configuration files
+	hasConfigFiles := false
+	supportedExts := []string{".json", ".properties", ".yaml", ".yml"}
+	
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		
+		ext := filepath.Ext(strings.ToLower(file.Name()))
+		for _, supportedExt := range supportedExts {
+			if ext == supportedExt {
+				hasConfigFiles = true
+				break
+			}
+		}
+		
+		if hasConfigFiles {
+			break
+		}
+	}
+
+	if !hasConfigFiles {
+		log.Warn("No configuration files found in directory", 
+			"dir", dir, 
+			"supported_extensions", supportedExts)
+		fmt.Printf("⚠️  Warning: No configuration files found in %s\n", dir)
+		fmt.Printf("   Looking for files with extensions: %v\n", supportedExts)
+		fmt.Println("   The analysis may return empty results.")
+		fmt.Println()
+	}
+
+	return nil
+}
+

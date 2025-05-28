@@ -1,4 +1,3 @@
-// internal/compatibility/matrix.go
 package compatibility
 
 import (
@@ -10,16 +9,26 @@ import (
 )
 
 type Matrix struct {
-	registry *registry.Registry
+	registry *registry.ImprovedRegistry
 }
 
-func GetMatrix() *Matrix {
-	return &Matrix{
-		registry: registry.New(),
+// GetMatrix creates a new matrix with improved registry and error handling
+func GetMatrix(configPath string) (*Matrix, error) {
+	improvedRegistry, err := registry.NewImproved(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create registry: %w", err)
 	}
+
+	return &Matrix{
+		registry: improvedRegistry,
+	}, nil
 }
 
 func (m *Matrix) ShowAll() error {
+	if m.registry == nil {
+		return fmt.Errorf("registry not initialized")
+	}
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#7D56F4"))
@@ -29,6 +38,10 @@ func (m *Matrix) ShowAll() error {
 	fmt.Println()
 
 	connectors := m.registry.GetAll()
+	if len(connectors) == 0 {
+		fmt.Println("⚠️  No connectors found in registry. Check your configuration.")
+		return nil
+	}
 
 	fmt.Println("┌─────────────────────────────────────┬─────────────────────┬─────────────┐")
 	fmt.Println("│ Connector Type                      │ Conduit Equivalent  │ Status      │")
@@ -54,7 +67,7 @@ func (m *Matrix) ShowAll() error {
 	fmt.Println("└─────────────────────────────────────┴─────────────────────┴─────────────┘")
 	fmt.Println()
 
-	// Show statistics
+	// Show statistics with error handling
 	supported := len(m.registry.GetByStatus(registry.StatusSupported))
 	partial := len(m.registry.GetByStatus(registry.StatusPartial))
 	manual := len(m.registry.GetByStatus(registry.StatusManual))
@@ -74,7 +87,18 @@ func (m *Matrix) ShowAll() error {
 }
 
 func (m *Matrix) ShowConnector(connectorType string) error {
+	if m.registry == nil {
+		return fmt.Errorf("registry not initialized")
+	}
+
+	if strings.TrimSpace(connectorType) == "" {
+		return fmt.Errorf("connector type cannot be empty")
+	}
+
 	connectors := m.registry.GetAll()
+	if len(connectors) == 0 {
+		return fmt.Errorf("no connectors found in registry")
+	}
 
 	var found *registry.ConnectorInfo
 
@@ -89,7 +113,23 @@ func (m *Matrix) ShowConnector(connectorType string) error {
 	}
 
 	if found == nil {
-		return fmt.Errorf("connector type '%s' not found in registry", connectorType)
+		// Provide helpful suggestions
+		var suggestions []string
+		for _, info := range connectors {
+			if strings.Contains(strings.ToLower(info.Name), strings.ToLower(connectorType)) ||
+				strings.Contains(strings.ToLower(connectorType), strings.ToLower(info.Name)) {
+				suggestions = append(suggestions, info.Name)
+			}
+		}
+
+		errorMsg := fmt.Sprintf("connector type '%s' not found in registry", connectorType)
+		if len(suggestions) > 0 {
+			errorMsg += fmt.Sprintf("\n\nDid you mean one of these?\n")
+			for _, suggestion := range suggestions {
+				errorMsg += fmt.Sprintf("  • %s\n", suggestion)
+			}
+		}
+		return fmt.Errorf(errorMsg)
 	}
 
 	fmt.Printf("🔗 %s\n", found.Name)

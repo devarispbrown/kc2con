@@ -521,3 +521,21 @@ func truncate(s string, max int) string {
 	}
 	return s[:max-3] + "..."
 }
+
+func NewAnalyzer(configDir string) (*Analyzer, error) {
+	if strings.TrimSpace(configDir) == "" {
+		return nil, fmt.Errorf("config directory cannot be empty")
+	}
+
+	// Validate directory exists and is accessible
+	if _, err := os.Stat(configDir); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("config directory does not exist: %s", configDir)
+		}
+		return nil, fmt.Errorf("cannot access config directory %s: %w", configDir, err)
+	}
+
+	return &Analyzer{
+		configDir: configDir,
+	}, nil
+}
