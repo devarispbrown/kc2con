@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devarispbrown/kc2con/internal/compatibility"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +32,11 @@ func init() {
 }
 
 func runCompatibility(cmd *cobra.Command, args []string) error {
-	matrix := compatibility.GetMatrix()
+	// Use improved registry with proper error handling
+	matrix, err := compatibility.GetMatrix(customConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize compatibility matrix: %w", err)
+	}
 
 	if connectorType != "" {
 		return matrix.ShowConnector(connectorType)
