@@ -1,0 +1,32 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Go files
+*.go text eol=lf
+
+# Script files
+*.sh text eol=lf
+
+# Windows files
+*.bat text eol=crlf
+
+# Binary files
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Archive files
+*.zip binary
+*.tar.gz binary
+
+# Documentation
+*.md text
+*.txt text
+
+# YAML files
+*.yml text
+*.yaml text
+
+# JSON files
+*.json text

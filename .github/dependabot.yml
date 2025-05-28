@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    reviewers:
+      - "devarispbrown"
+    assignees:
+      - "devarispbrown"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Go modules updates
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    reviewers:
+      - "devarispbrown"
+    assignees:
+      - "devarispbrown"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      testify:
+        patterns:
+          - "github.com/stretchr/testify*"
+      cobra:
+        patterns:
+          - "github.com/spf13/cobra*"
+          - "github.com/spf13/viper*"
+      charmbracelet:
+        patterns:
+          - "github.com/charmbracelet/*"

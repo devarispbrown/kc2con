@@ -1,0 +1,15 @@
+# Global owners
+* @devarispbrown
+
+# CI/CD files
+.github/ @devarispbrown
+Makefile @devarispbrown
+Dockerfile @devarispbrown
+
+# Core functionality
+internal/ @devarispbrown
+cmd/ @devarispbrown
+
+# Documentation
+docs/ @devarispbrown
+README.md @devarispbrown

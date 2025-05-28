@@ -1,0 +1,246 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Set minimal permissions by default
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ['1.21.x', '1.22.x']
+
+    # Only grant permissions needed for this job
+    permissions:
+      contents: read
+      checks: write # Allow updating check runs
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+        cache-dependency-path: go.sum
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run linters
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Run unit tests
+      run: go test -v -race -timeout=30m -coverprofile=coverage.out ./internal/...
+
+    - name: Generate coverage report
+      if: matrix.go-version == '1.21.x'
+      run: go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload coverage reports
+      if: matrix.go-version == '1.21.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          coverage.out
+          coverage.html
+        retention-days: 30
+
+    - name: Upload coverage to Codecov
+      if: matrix.go-version == '1.21.x'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        fail_ci_if_error: false # Don't fail CI if codecov upload fails
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ['1.21.x']
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+        cache-dependency-path: go.sum
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build binary with coverage
+      run: go build -cover -o kc2con .
+
+    - name: Run integration tests
+      run: |
+        mkdir -p coverage
+        GOCOVERDIR=./coverage go test -v -tags integration -timeout=30m ./test/
+
+    - name: Generate integration coverage
+      run: |
+        if [ -d ./coverage ]; then
+          go tool covdata textfmt -i=./coverage -o coverage-integration.out
+          go tool cover -html=coverage-integration.out -o coverage-integration.html
+        fi
+
+    - name: Upload integration coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-coverage
+        path: |
+          coverage-integration.out
+          coverage-integration.html
+        retention-days: 30
+      if: always()
+
+    - name: Run smoke tests
+      run: |
+        ./kc2con --version
+        ./kc2con --help
+        ./kc2con compatibility
+        ./kc2con connectors list
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write # Allow uploading security scan results
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21.x'
+        cache: true
+
+    - name: Run security scan
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Run gosec security scanner
+      uses: securego/gosec@master
+      with:
+        args: '-no-fail -fmt sarif -out results.sarif ./...'
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: results.sarif
+
+  cross-platform:
+    name: Cross Platform Tests
+    runs-on: ${{ matrix.os }}
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: ['1.21.x']
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+
+    - name: Build binary
+      run: go build -o kc2con${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
+
+    - name: Run basic tests
+      run: go test -short ./internal/...
+
+    - name: Test binary execution
+      run: |
+        ./kc2con${{ matrix.os == 'windows-latest' && '.exe' || '' }} --version
+
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: unit-tests
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21.x'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build binary with coverage
+      run: go build -cover -o kc2con .
+
+    - name: Run performance tests
+      run: |
+        mkdir -p coverage
+        GOCOVERDIR=./coverage go test -v -tags integration -timeout=30m -run TestPerformance ./test/
+
+    - name: Run benchmarks
+      run: go test -bench=. -benchmem ./internal/...
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        fail-on-severity: moderate
