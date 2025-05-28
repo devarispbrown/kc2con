@@ -1,0 +1,32 @@
+version: "2.2"
+pipelines:
+  - id: mysql-inventory-source
+    status: running
+    name: mysql-inventory-source
+    description: MySQL CDC pipeline migrated from mysql-inventory-source
+    connectors:
+      - mysql-inventory-source-mysql-source
+    processors:
+      - processor-0
+      - processor-1
+connectors:
+  - id: mysql-inventory-source-mysql-source
+    type: source
+    plugin: builtin:mysql@latest
+    name: mysql-inventory-source MySQL Source
+    settings:
+      url: mysql://debezium:${MASKED_DATABASE.PASSWORD}@mysql.example.com:3306/inventory
+      tables: inventory.products,inventory.customers,inventory.orders
+      snapshot.mode: initial
+      server.id: "184054"
+      cdc.enabled: true
+processors:
+  - id: processor-0
+    plugin: builtin:unwrap.debezium@latest
+    settings:
+      drop.tombstones: false
+  - id: processor-1
+    plugin: builtin:field.rename@latest
+    settings:
+      regex: "([^.]+)\\.([^.]+)\\.([^.]+)"
+      replacement: "$3"
