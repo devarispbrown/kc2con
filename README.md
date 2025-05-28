@@ -305,7 +305,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 - [ ] Schema registry migration
 - [ ] Performance optimization recommendations
 - [ ] Cloud-specific configurations
-- [ ] Integration tests
+- [x] Integration tests
 
 ## Resources
 
@@ -322,8 +322,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - 🐛 [Report Issues](https://github.com/devarispbrown/kc2con/issues)
 - 💬 [Discussions](https://github.com/devarispbrown/kc2con/discussions)
-- 📧 Contact: [your-email@example.com]
+- 📧 Contact: [devaris@devaris.com]
 
 ---
 
-Made with ❤️ by the kc2con team. Happy migrating! 🚀
+Happy migrating! 🚀
